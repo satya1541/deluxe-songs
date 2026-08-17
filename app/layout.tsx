@@ -33,6 +33,9 @@ export const metadata: Metadata = {
   title: 'इश्क़ के सुर - Deluxe Mix',
   description: 'इश्क़ के सुर - Deluxe Mix Music Player',
   keywords: ['इश्क़ के सुर', 'Deluxe Mix', 'Music Player', 'Sambalpuri Song', 'Odia Music'],
+  other: {
+    google: 'notranslate',
+  },
   icons: {
     icon: [
       { url: '/favicon.ico' },
@@ -60,8 +63,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="hi" className={`${inter.variable} ${notoSansDevanagari.variable} ${yatraOne.variable} ${rozhaOne.variable}`}>
-      <body>{children}</body>
+    <html lang="en" translate="no" className={`${inter.variable} ${notoSansDevanagari.variable} ${yatraOne.variable} ${rozhaOne.variable}`}>
+      <body className="notranslate">{children}</body>
     </html>
   );
 }
