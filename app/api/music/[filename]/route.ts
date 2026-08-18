@@ -1,7 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { Readable } from 'stream';
+
+function nodeStreamToWebStream(nodeStream: fs.ReadStream): ReadableStream {
+  let isClosed = false;
+
+  return new ReadableStream({
+    start(controller) {
+      nodeStream.on('data', (chunk) => {
+        if (isClosed) return;
+        try {
+          controller.enqueue(chunk);
+        } catch {
+          isClosed = true;
+          nodeStream.destroy();
+        }
+      });
+
+      nodeStream.on('end', () => {
+        if (isClosed) return;
+        isClosed = true;
+        try {
+          controller.close();
+        } catch {}
+      });
+
+      nodeStream.on('error', (err) => {
+        if (isClosed) return;
+        isClosed = true;
+        try {
+          controller.error(err);
+        } catch {}
+      });
+    },
+    cancel() {
+      isClosed = true;
+      nodeStream.destroy();
+    },
+  });
+}
 
 export async function GET(
   request: NextRequest,
@@ -48,7 +85,7 @@ export async function GET(
 
       const chunkSize = end - start + 1;
       const nodeStream = fs.createReadStream(filePath, { start, end });
-      const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+      const webStream = nodeStreamToWebStream(nodeStream);
 
       return new NextResponse(webStream, {
         status: 206,
@@ -62,7 +99,7 @@ export async function GET(
       });
     } else {
       const nodeStream = fs.createReadStream(filePath);
-      const webStream = Readable.toWeb(nodeStream) as ReadableStream;
+      const webStream = nodeStreamToWebStream(nodeStream);
 
       return new NextResponse(webStream, {
         status: 200,
@@ -79,3 +116,4 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to stream audio' }, { status: 500 });
   }
 }
+

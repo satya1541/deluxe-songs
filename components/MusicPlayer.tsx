@@ -6,6 +6,7 @@ import { Song } from '@/types/music';
 import { useAudioEngine } from '@/hooks/useAudioEngine';
 import AudioEnhancer from '@/components/AudioEnhancer';
 import EmotionOverlay from '@/components/EmotionOverlay';
+import VolumeHUD from '@/components/VolumeHUD';
 
 const PLAYED_HISTORY_KEY = 'deluxe_played_history_v1';
 
@@ -285,7 +286,23 @@ export default function MusicPlayer() {
     }
   };
 
-  // Keyboard shortcut listener (Space bar)
+  const [showVolumeHud, setShowVolumeHud] = useState(false);
+
+  const adjustVolume = useCallback((delta: number) => {
+    engine.setVolume(engine.state.volume + delta);
+    setShowVolumeHud(true);
+  }, [engine]);
+
+  // Auto-hide volume HUD after 1.2 seconds of inactivity
+  useEffect(() => {
+    if (!showVolumeHud) return;
+    const timer = setTimeout(() => {
+      setShowVolumeHud(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [showVolumeHud, engine.state.volume]);
+
+  // Keyboard shortcut listener (Space bar, ArrowUp, ArrowDown)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -295,12 +312,18 @@ export default function MusicPlayer() {
       if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
         togglePlay();
+      } else if (e.code === 'ArrowUp' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        adjustVolume(5);
+      } else if (e.code === 'ArrowDown' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        adjustVolume(-5);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlay]);
+  }, [togglePlay, adjustVolume]);
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -484,6 +507,12 @@ export default function MusicPlayer() {
         engine={engine}
         isOpen={enhancerOpen}
         onClose={() => setEnhancerOpen(false)}
+      />
+
+      {/* Dynamic Keyboard Volume Animation HUD */}
+      <VolumeHUD
+        volume={engine.state.volume}
+        isVisible={showVolumeHud}
       />
     </>
   );

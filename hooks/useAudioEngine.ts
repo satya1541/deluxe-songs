@@ -375,11 +375,15 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
   }, [audioRef]);
 
   const setVolume = useCallback((value: number) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(value)));
     if (volumeRef.current) {
-      volumeRef.current.gain.setTargetAtTime(value / 100, ctxRef.current?.currentTime ?? 0, 0.02);
+      volumeRef.current.gain.setTargetAtTime(clamped / 100, ctxRef.current?.currentTime ?? 0, 0.02);
     }
-    setState(prev => ({ ...prev, volume: value }));
-  }, []);
+    if (audioRef.current) {
+      audioRef.current.volume = clamped / 100;
+    }
+    setState(prev => ({ ...prev, volume: clamped }));
+  }, [audioRef]);
 
   // Cleanup
   useEffect(() => {

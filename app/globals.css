@@ -2339,4 +2339,136 @@ button {
   cursor: not-allowed;
 }
 
+/* ================================================================
+   VOLUME HUD — Luxury Glassmorphic Feedback Overlay
+   ================================================================ */
+
+.volume-hud-container {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.volume-hud-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+.volume-hud-hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-14px) scale(0.92);
+  visibility: hidden;
+}
+
+.volume-hud-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 300px;
+  padding: 12px 18px;
+  border-radius: 20px;
+  background: rgba(18, 10, 14, 0.86);
+  backdrop-filter: blur(35px) saturate(2);
+  -webkit-backdrop-filter: blur(35px) saturate(2);
+  border: 1px solid rgba(255, 200, 160, 0.24);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
+              0 0 35px rgba(249, 115, 22, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  animation: hud-bounce 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hud-bounce {
+  0% { transform: scale(0.94); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.volume-hud-icon-wrapper {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(249, 115, 22, 0.14);
+  border: 1px solid rgba(249, 115, 22, 0.35);
+  display: grid;
+  place-items: center;
+  color: #fb923c;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.volume-hud-icon-wrapper.icon-muted {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.volume-hud-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.volume-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.volume-hud-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.volume-hud-value {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.2px;
+}
+
+.volume-segment-bar {
+  display: flex;
+  align-items: center;
+  gap: 3.5px;
+  height: 8px;
+  width: 100%;
+}
+
+.volume-segment {
+  flex: 1;
+  height: 100%;
+  border-radius: 2px;
+  background: #ffffff;
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.volume-segment.segment-active {
+  background: linear-gradient(180deg, #fdba74 0%, #f97316 100%);
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+}
+
+.volume-hud-badge {
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fed7aa;
+  flex-shrink: 0;
+}
+
+
 
