@@ -342,12 +342,18 @@ export default function EmotionOverlay({
     });
   }, [activeEmotion]);
 
-  // Main Canvas Rendering Loop
+  // Main Canvas Rendering Loop - ONLY runs when music is playing
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
+
+    // When paused: clear canvas completely, do not run animation loop (0% GPU/CPU)
+    if (!isPlaying) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      return;
+    }
 
     const handleResize = () => {
       canvas.width = window.innerWidth;
@@ -361,6 +367,8 @@ export default function EmotionOverlay({
         clouds: cloudsRef,
       });
     };
+
+    handleResize();
 
     // Interactive mouse / touch wipe on glass
     const handlePointerMove = (e: MouseEvent | TouchEvent) => {
@@ -472,14 +480,14 @@ export default function EmotionOverlay({
 
   return (
     <>
-      {/* 60FPS WebGL/Canvas Physical Layer */}
+      {/* 60FPS WebGL/Canvas Physical Layer - ONLY rendered when playing */}
       <canvas
         ref={canvasRef}
-        className={`emotion-canvas ${isPlaying ? 'emotion-canvas-active' : 'emotion-canvas-dimmed'}`}
+        className={`emotion-canvas ${isPlaying ? 'emotion-canvas-active' : 'emotion-canvas-hidden'}`}
         aria-hidden="true"
       />
 
-      {/* Deep CSS atmospheric gradient */}
+      {/* Deep CSS atmospheric gradient - ONLY active when playing */}
       <div
         className={`emotion-overlay emotion-${activeEmotion} ${isPlaying ? 'emotion-active' : 'emotion-paused'} ${isTransitioning ? 'emotion-transitioning' : ''}`}
         aria-hidden="true"
@@ -487,8 +495,8 @@ export default function EmotionOverlay({
         <div className="emotion-gradient" />
       </div>
 
-      {/* Sleek Automatic AI Mood Badge */}
-      <div className="emotion-badge-container">
+      {/* Sleek Automatic AI Mood Badge - Visible when playing */}
+      <div className={`emotion-badge-container ${isPlaying ? 'emotion-badge-visible' : 'emotion-badge-hidden'}`}>
         <div
           className="emotion-badge-pill"
           title={`AI Romantic Subtype: ${emotionData?.label || currentThemeInfo.shortLabel}`}
