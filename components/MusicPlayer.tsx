@@ -254,6 +254,22 @@ export default function MusicPlayer() {
     nextSong();
   };
 
+  const handleAudioError = useCallback(() => {
+    if (!currentSong) return;
+    console.warn(`Track "${currentSong.name}" (${currentSong.file}) could not be loaded. Skipping to next track.`);
+    
+    // Clean up from local history so it doesn't block queues
+    let history = getPlayedHistory();
+    if (history.includes(currentSong.file)) {
+      savePlayedHistory(history.filter((f) => f !== currentSong.file));
+    }
+
+    // Auto-skip to next playable track
+    setTimeout(() => {
+      nextSong();
+    }, 200);
+  }, [currentSong, nextSong]);
+
   // Seek bar click
   const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!progressBarRef.current || !audioRef.current || !duration) return;
@@ -358,6 +374,7 @@ export default function MusicPlayer() {
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={handleEnded}
+          onError={handleAudioError}
         />
         <div className="player-inner">
           <div className="album-art-wrapper">

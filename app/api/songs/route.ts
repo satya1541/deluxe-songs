@@ -83,7 +83,7 @@ export async function GET() {
           id: index + 1,
           name,
           artist,
-          file: `/music/${file}`,
+          file: `/api/music/${encodeURIComponent(file)}`,
           fileName: file,
           cover,
         };
@@ -113,8 +113,10 @@ export async function DELETE(request: Request) {
       );
     }
 
-    // Strip leading "/music/" if present
-    if (targetFileName.startsWith('/music/')) {
+    // Strip leading "/api/music/" or "/music/" if present
+    if (targetFileName.startsWith('/api/music/')) {
+      targetFileName = targetFileName.replace(/^\/api\/music\//, '');
+    } else if (targetFileName.startsWith('/music/')) {
       targetFileName = targetFileName.replace(/^\/music\//, '');
     }
     // Decode URI component (e.g. spaces %20)

@@ -208,7 +208,8 @@ export default function UploadPage() {
     setIsDeleting(true);
 
     const targetFileName =
-      songToDelete.fileName || songToDelete.file.replace('/music/', '');
+      songToDelete.fileName ||
+      songToDelete.file.replace(/^\/api\/music\//, '').replace(/^\/music\//, '');
 
     try {
       const res = await fetch('/api/songs', {

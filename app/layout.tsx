@@ -35,6 +35,7 @@ export const metadata: Metadata = {
   keywords: ['इश्क़ के सुर', 'Deluxe Mix', 'Music Player', 'Sambalpuri Song', 'Odia Music'],
   other: {
     google: 'notranslate',
+    'mobile-web-app-capable': 'yes',
   },
   icons: {
     icon: [
@@ -46,6 +47,7 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
   appleWebApp: {
+    capable: true,
     title: 'Deluxe Mix',
   },
 };
