@@ -1,15 +1,51 @@
 'use client';
 
-import { AudioEngineControls, EQ_PRESETS, EQ_BAND_LABELS } from '@/hooks/useAudioEngine';
+import {
+  AudioEngineControls,
+  EQ_PRESETS,
+  EQ_BAND_LABELS,
+  AIAcousticProfile,
+} from '@/hooks/useAudioEngine';
 
 interface AudioEnhancerProps {
   engine: AudioEngineControls;
   isOpen: boolean;
   onClose: () => void;
+  aiSmartEq: boolean;
+  onToggleAiSmartEq: () => void;
+  activeProfile?: AIAcousticProfile | null;
 }
 
-export default function AudioEnhancer({ engine, isOpen, onClose }: AudioEnhancerProps) {
+export default function AudioEnhancer({
+  engine,
+  isOpen,
+  onClose,
+  aiSmartEq,
+  onToggleAiSmartEq,
+  activeProfile,
+}: AudioEnhancerProps) {
   const { state } = engine;
+
+  const handleSelectPreset = (name: string) => {
+    if (aiSmartEq) {
+      onToggleAiSmartEq();
+    }
+    engine.setPreset(name);
+  };
+
+  const handleSetEqBand = (bandIndex: number, gain: number) => {
+    if (aiSmartEq) {
+      onToggleAiSmartEq();
+    }
+    engine.setEqBand(bandIndex, gain);
+  };
+
+  const handleResetAll = () => {
+    if (aiSmartEq) {
+      onToggleAiSmartEq();
+    }
+    engine.resetToFlat();
+  };
 
   return (
     <>
@@ -39,24 +75,92 @@ export default function AudioEnhancer({ engine, isOpen, onClose }: AudioEnhancer
             </svg>
             <h3>Audio Enhancer</h3>
           </div>
-          <button className="enhancer-close-btn" onClick={onClose} aria-label="Close enhancer">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-            </svg>
-          </button>
+          <div className="enhancer-header-actions">
+            <button
+              type="button"
+              className="enhancer-reset-btn"
+              onClick={handleResetAll}
+              title="Reset All EQ & Effects to Flat (0dB)"
+            >
+              Reset
+            </button>
+            <button className="enhancer-close-btn" onClick={onClose} aria-label="Close enhancer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Scrollable content */}
         <div className="enhancer-content">
+          {/* === AI SMART ACOUSTICS (AUTO SPATIAL AUDIO) === */}
+          <div className={`ai-smart-eq-card ${aiSmartEq ? 'ai-smart-eq-active' : ''}`}>
+            <div className="ai-smart-eq-header">
+              <div className="ai-smart-eq-title-wrap">
+                <div className="ai-sparkle-icon">✨</div>
+                <div>
+                  <div className="ai-smart-eq-title">
+                    <span>AI Smart Acoustics</span>
+                    <span className="ai-smart-eq-badge">{aiSmartEq ? 'AUTO OPTIMIZED' : 'OFF'}</span>
+                  </div>
+                  <p className="ai-smart-eq-subtitle">
+                    Auto-tunes sound & 3D spatial room to match the song vibe
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={`toggle-switch ${aiSmartEq ? 'toggle-on' : ''}`}
+                onClick={onToggleAiSmartEq}
+                role="switch"
+                aria-checked={aiSmartEq}
+                aria-label="Toggle AI Smart Acoustics"
+              >
+                <div className="toggle-knob" />
+              </button>
+            </div>
+
+            {aiSmartEq && activeProfile && (
+              <div className="ai-profile-live-box">
+                <div className="ai-profile-meta">
+                  <div className="ai-headphone-stage">
+                    <span className="ai-profile-icon">{activeProfile.icon}</span>
+                    <div className="stage-ring ring-1" />
+                    <div className="stage-ring ring-2" />
+                  </div>
+                  <div className="ai-profile-info">
+                    <span className="ai-profile-name">{activeProfile.name}</span>
+                    <span className="ai-profile-tagline">{activeProfile.tagline}</span>
+                  </div>
+                </div>
+
+                <div className="ai-profile-chips">
+                  <span className="ai-chip">Bass +{activeProfile.bassBoost}dB</span>
+                  <span className="ai-chip">
+                    {activeProfile.reverbEnabled ? `Spatial 3D Audio` : 'Studio Clarity'}
+                  </span>
+                  <span className="ai-chip">
+                    {activeProfile.loudnessEnabled ? 'Dynamic Punch' : 'Natural Vocals'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* === EQ Presets === */}
           <div className="enhancer-section">
-            <label className="section-label">EQ Presets</label>
+            <div className="section-label-row">
+              <label className="section-label">EQ Presets</label>
+              {aiSmartEq && <span className="section-subhint">(Selecting will switch to Manual Mode)</span>}
+            </div>
             <div className="preset-grid">
               {EQ_PRESETS.map((preset) => (
                 <button
                   key={preset.name}
                   className={`preset-pill ${state.activePreset === preset.name ? 'preset-active' : ''}`}
-                  onClick={() => engine.setPreset(preset.name)}
+                  onClick={() => handleSelectPreset(preset.name)}
                 >
                   <span className="preset-icon">{preset.icon}</span>
                   <span className="preset-name">{preset.name}</span>
@@ -79,7 +183,7 @@ export default function AudioEnhancer({ engine, isOpen, onClose }: AudioEnhancer
                       max="12"
                       step="1"
                       value={state.eqGains[i]}
-                      onChange={(e) => engine.setEqBand(i, parseInt(e.target.value))}
+                      onChange={(e) => handleSetEqBand(i, parseInt(e.target.value))}
                       className="eq-range-input"
                     />
                   </div>

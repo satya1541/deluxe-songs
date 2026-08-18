@@ -36,12 +36,12 @@ export default function TopBar() {
   return (
     <header className="top-bar">
       <div className="top-left">
-        <span className="time">{currentTime}</span>
+        <span className="time" suppressHydrationWarning>{currentTime}</span>
       </div>
 
       <div className="top-center">
         <span className="online-dot"></span>
-        <span className="online-count">{onlineCount}</span>
+        <span className="online-count" suppressHydrationWarning>{onlineCount}</span>
         <span className="online-label">online</span>
       </div>
 

@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Song } from '@/types/music';
-import { useAudioEngine } from '@/hooks/useAudioEngine';
+import { useAudioEngine, AI_ACOUSTIC_PROFILES, AIAcousticProfile } from '@/hooks/useAudioEngine';
 import AudioEnhancer from '@/components/AudioEnhancer';
-import EmotionOverlay from '@/components/EmotionOverlay';
+import EmotionOverlay, { getInstantEmotion } from '@/components/EmotionOverlay';
 import VolumeHUD from '@/components/VolumeHUD';
 
 const PLAYED_HISTORY_KEY = 'deluxe_played_history_v1';
@@ -181,7 +181,59 @@ export default function MusicPlayer() {
   const currentSongIndex = queue[queueIndex] ?? 0;
   const currentSong: Song | undefined = songs[currentSongIndex] || songs[0];
 
-  // Play / Pause side effect controlled ONLY by isPlaying state
+  // AI Smart Acoustics (Auto Spatial Audio EQ) State
+  const [aiSmartEq, setAiSmartEq] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('deluxe_ai_smart_eq_v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Calculate active emotion & acoustic profile for active song
+  const activeEmotion = currentSong ? getInstantEmotion(currentSong.name, currentSong.artist) : null;
+  const activeProfile: AIAcousticProfile | null =
+    activeEmotion?.emotion && AI_ACOUSTIC_PROFILES[activeEmotion.emotion]
+      ? AI_ACOUSTIC_PROFILES[activeEmotion.emotion]
+      : AI_ACOUSTIC_PROFILES.soft_romantic;
+
+  // Auto-sculpt acoustics when AI Smart EQ is active and song plays
+  useEffect(() => {
+    if (aiSmartEq && activeProfile && isPlaying) {
+      engine.applyAcousticProfile(activeProfile);
+    }
+  }, [aiSmartEq, activeProfile, isPlaying, engine]);
+
+  // AI Acoustic Profile floating toast (shows ONLY when manually enabling AI)
+  const [aiToast, setAiToast] = useState<{ profile: AIAcousticProfile } | null>(null);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const toggleAiSmartEq = useCallback(() => {
+    setAiSmartEq((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('deluxe_ai_smart_eq_v1', String(next));
+        } catch {}
+      }
+      if (next && activeProfile) {
+        engine.applyAcousticProfile(activeProfile);
+        // Show confirmation toast ONLY when enabling AI
+        setAiToast({ profile: activeProfile });
+        if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+        toastTimeoutRef.current = setTimeout(() => {
+          setAiToast(null);
+        }, 2200);
+      } else if (!next) {
+        engine.resetToFlat();
+        setAiToast(null);
+      }
+      return next;
+    });
+  }, [activeProfile, engine]);
+
+  // Play / Pause side effect controlled ONLY by isPlaying state and track changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentSong) return;
@@ -194,6 +246,8 @@ export default function MusicPlayer() {
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
+          // Ignore AbortError caused by track switches / src changes
+          if (err.name === 'AbortError') return;
           console.warn('Playback blocked or failed:', err);
           setIsPlaying(false);
         });
@@ -201,13 +255,14 @@ export default function MusicPlayer() {
     } else {
       audio.pause();
     }
-  }, [isPlaying, currentSong, engine]);
+  }, [isPlaying, currentSong?.file, engine]);
 
   const togglePlay = useCallback(() => {
     setIsPlaying((prev) => !prev);
   }, []);
 
   const nextSong = useCallback(() => {
+    setIsPlaying(true);
     setQueueIndex((prevIndex) => {
       const nextIdx = prevIndex + 1;
       if (nextIdx >= queue.length) {
@@ -220,17 +275,17 @@ export default function MusicPlayer() {
   }, [queue, songs]);
 
   const prevSong = useCallback(() => {
+    setIsPlaying(true);
     if (audioRef.current && audioRef.current.currentTime > 3) {
       audioRef.current.currentTime = 0;
       setCurrentTime(0);
-      if (!isPlaying) setIsPlaying(true);
     } else {
       setQueueIndex((prevIndex) => {
         if (prevIndex > 0) return prevIndex - 1;
         return queue.length - 1;
       });
     }
-  }, [isPlaying, queue.length]);
+  }, [queue.length]);
 
   // Audio Event Handlers
   const handleTimeUpdate = () => {
@@ -251,7 +306,20 @@ export default function MusicPlayer() {
     }
   };
 
+  const handleCanPlay = () => {
+    if (isPlaying && audioRef.current && audioRef.current.paused) {
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          if (err.name === 'AbortError') return;
+          console.warn('Playback on canplay failed:', err);
+        });
+      }
+    }
+  };
+
   const handleEnded = () => {
+    setIsPlaying(true);
     nextSong();
   };
 
@@ -393,9 +461,10 @@ export default function MusicPlayer() {
         <audio
           ref={audioRef}
           src={currentSong.file}
-          preload="metadata"
+          preload="auto"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
+          onCanPlay={handleCanPlay}
           onEnded={handleEnded}
           onError={handleAudioError}
         />
@@ -439,12 +508,29 @@ export default function MusicPlayer() {
           </div>
 
           <div className="player-controls">
+            {/* Direct AI Smart Acoustics Button */}
+            <button
+              type="button"
+              className={`control-btn ai-acoustics-btn ${aiSmartEq ? 'ai-acoustics-active' : ''}`}
+              onClick={toggleAiSmartEq}
+              aria-label="Toggle AI Smart Acoustics"
+              title={
+                aiSmartEq && activeProfile
+                  ? `✨ AI Smart Acoustics: ON (${activeProfile.name})`
+                  : '✨ Turn ON AI Smart Acoustics'
+              }
+            >
+              <span className="ai-btn-sparkle">✨</span>
+              <span className="ai-btn-label">AI</span>
+            </button>
+
             {/* EQ Button */}
             <button
               type="button"
               className={`control-btn eq-btn ${enhancerOpen ? 'eq-active' : ''}`}
               onClick={toggleEnhancer}
               aria-label="Audio Enhancer"
+              title="Equalizer & Sound Effects"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <rect x="2" y="14" width="4" height="8" rx="1" />
@@ -502,11 +588,14 @@ export default function MusicPlayer() {
         isPlaying={isPlaying}
       />
 
-      {/* Audio Enhancer Panel */}
+      {/* Audio Enhancer Panel with AI Smart Acoustics */}
       <AudioEnhancer
         engine={engine}
         isOpen={enhancerOpen}
         onClose={() => setEnhancerOpen(false)}
+        aiSmartEq={aiSmartEq}
+        onToggleAiSmartEq={toggleAiSmartEq}
+        activeProfile={activeProfile}
       />
 
       {/* Dynamic Keyboard Volume Animation HUD */}
@@ -514,6 +603,27 @@ export default function MusicPlayer() {
         volume={engine.state.volume}
         isVisible={showVolumeHud}
       />
+
+      {/* AI Smart Acoustics Active Profile Toast Pill */}
+      {aiToast && (
+        <aside
+          className="ai-acoustic-toast"
+          aria-live="polite"
+          role="status"
+          aria-label={`AI Spatial Audio: ${aiToast.profile.name}`}
+        >
+          <div className="ai-toast-card">
+            <span className="ai-toast-sparkle">✨</span>
+            <div className="ai-toast-content">
+              <div className="ai-toast-title">
+                <span>{aiToast.profile.icon} {aiToast.profile.name}</span>
+                <span className="ai-toast-tag">3D HEADPHONE</span>
+              </div>
+              <span className="ai-toast-desc">{aiToast.profile.tagline}</span>
+            </div>
+          </div>
+        </aside>
+      )}
     </>
   );
 }

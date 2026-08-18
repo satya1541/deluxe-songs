@@ -580,6 +580,30 @@ button {
   margin: 0;
 }
 
+.enhancer-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.enhancer-reset-btn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.enhancer-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .enhancer-close-btn {
   width: 32px;
   height: 32px;
@@ -2469,6 +2493,326 @@ button {
   color: #fed7aa;
   flex-shrink: 0;
 }
+
+/* ================================================================
+   AI SMART ACOUSTICS (AUTO-SPATIAL EQ) STYLES
+   ================================================================ */
+
+.ai-smart-eq-card {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%);
+  border: 1px solid rgba(249, 115, 22, 0.24);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.ai-smart-eq-card.ai-smart-eq-active {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.16) 0%, rgba(168, 85, 247, 0.16) 100%);
+  border-color: rgba(249, 115, 22, 0.48);
+  box-shadow: 0 0 25px rgba(249, 115, 22, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.ai-smart-eq-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ai-smart-eq-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-sparkle-icon {
+  font-size: 20px;
+  animation: sparkle-spin 3s ease-in-out infinite alternate;
+}
+
+@keyframes sparkle-spin {
+  0% { transform: rotate(0deg) scale(0.95); }
+  50% { transform: rotate(15deg) scale(1.1); }
+  100% { transform: rotate(-10deg) scale(1); }
+}
+
+.ai-smart-eq-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-smart-eq-badge {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(249, 115, 22, 0.25);
+  color: #fed7aa;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.ai-smart-eq-subtitle {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 2px;
+}
+
+.ai-profile-live-box {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.25s ease;
+}
+
+.ai-profile-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-profile-icon {
+  font-size: 22px;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+}
+
+.ai-profile-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-profile-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.ai-profile-tagline {
+  font-size: 11px;
+  color: #fed7aa;
+}
+
+.ai-profile-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ai-chip {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.section-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-subhint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.control-btn.ai-acoustics-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 44px;
+  height: 38px;
+  padding: 0 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.control-btn.ai-acoustics-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.control-btn.ai-acoustics-btn.ai-acoustics-active {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.28) 0%, rgba(168, 85, 247, 0.28) 100%);
+  border-color: rgba(249, 115, 22, 0.65);
+  color: #fed7aa;
+  box-shadow: 0 0 18px rgba(249, 115, 22, 0.45),
+              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.control-btn.ai-acoustics-btn.ai-acoustics-active:hover {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.38) 0%, rgba(168, 85, 247, 0.38) 100%);
+  border-color: rgba(249, 115, 22, 0.9);
+  color: #ffffff;
+}
+
+.ai-btn-sparkle {
+  font-size: 13px;
+  line-height: 1;
+  display: inline-block;
+}
+
+.control-btn.ai-acoustics-btn.ai-acoustics-active .ai-btn-sparkle {
+  animation: sparkle-spin 3s ease-in-out infinite alternate;
+}
+
+.ai-btn-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* 3D Headphone Soundstage Orbit inside Enhancer */
+.ai-headphone-stage {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ai-headphone-stage .ai-profile-icon {
+  position: relative;
+  z-index: 2;
+  font-size: 24px;
+  filter: drop-shadow(0 2px 8px rgba(249, 115, 22, 0.4));
+}
+
+.stage-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  pointer-events: none;
+}
+
+.stage-ring.ring-1 {
+  width: 36px;
+  height: 36px;
+  animation: stage-pulse-1 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+}
+
+.stage-ring.ring-2 {
+  width: 44px;
+  height: 44px;
+  border-color: rgba(168, 85, 247, 0.35);
+  animation: stage-pulse-2 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite 0.6s;
+}
+
+@keyframes stage-pulse-1 {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 0.3; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+@keyframes stage-pulse-2 {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 0.25; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+/* Floating AI Acoustic Toast */
+.ai-acoustic-toast {
+  position: fixed;
+  bottom: 108px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 180;
+  pointer-events: none;
+  animation: toast-pop-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toast-pop-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(14px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.ai-toast-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  background: rgba(20, 12, 10, 0.88);
+  backdrop-filter: blur(28px) saturate(1.8);
+  -webkit-backdrop-filter: blur(28px) saturate(1.8);
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.5),
+    0 0 25px rgba(249, 115, 22, 0.25),
+    inset 0 1px 0 rgba(255, 220, 180, 0.3);
+}
+
+.ai-toast-sparkle {
+  font-size: 15px;
+  animation: sparkle-spin 2.5s ease-in-out infinite alternate;
+}
+
+.ai-toast-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-toast-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff7ed;
+  letter-spacing: 0.2px;
+}
+
+.ai-toast-tag {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(168, 85, 247, 0.3));
+  border: 1px solid rgba(249, 115, 22, 0.4);
+  color: #fed7aa;
+}
+
+.ai-toast-desc {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+}
+
+
 
 
 
