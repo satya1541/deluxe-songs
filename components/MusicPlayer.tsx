@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Song } from '@/types/music';
 import { useAudioEngine } from '@/hooks/useAudioEngine';
 import AudioEnhancer from '@/components/AudioEnhancer';
+import EmotionOverlay from '@/components/EmotionOverlay';
 
 function generateShuffledQueue(songList: Song[], currentQueue: number[] = []): number[] {
   if (songList.length === 0) return [];
@@ -47,26 +48,35 @@ export default function MusicPlayer() {
   // Audio engine
   const engine = useAudioEngine(audioRef);
 
+  const loadSongs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/songs', { cache: 'no-store' });
+      if (res.ok) {
+        const fetchedSongs: Song[] = await res.json();
+        if (fetchedSongs.length > 0) {
+          setSongs(fetchedSongs);
+          setQueue((prevQueue) => {
+            if (prevQueue.length === 0) {
+              return generateShuffledQueue(fetchedSongs);
+            }
+            // If new songs added, append to queue
+            const existingIndices = new Set(prevQueue);
+            const newIndices = fetchedSongs
+              .map((_, i) => i)
+              .filter((i) => !existingIndices.has(i));
+            return [...prevQueue, ...newIndices];
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch dynamic songs list:', err);
+    }
+  }, []);
+
   // Fetch dynamic list of songs automatically from /public/music/ via /api/songs
   useEffect(() => {
-    async function loadSongs() {
-      try {
-        const res = await fetch('/api/songs', { cache: 'no-store' });
-        if (res.ok) {
-          const fetchedSongs: Song[] = await res.json();
-          if (fetchedSongs.length > 0) {
-            setSongs(fetchedSongs);
-            const initialQueue = generateShuffledQueue(fetchedSongs);
-            setQueue(initialQueue);
-            setQueueIndex(0);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch dynamic songs list:', err);
-      }
-    }
     loadSongs();
-  }, []);
+  }, [loadSongs]);
 
   // Set default audio element volume to 50%
   useEffect(() => {
@@ -212,6 +222,11 @@ export default function MusicPlayer() {
           </div>
 
           <div className="player-controls">
+            <div className="control-btn upload-btn" style={{ opacity: 0.4 }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+              </svg>
+            </div>
             <div className="control-btn eq-btn" style={{ opacity: 0.4 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <rect x="2" y="14" width="4" height="8" rx="1" />
@@ -346,6 +361,13 @@ export default function MusicPlayer() {
           </div>
         </div>
       </div>
+
+      {/* Emotion Visual Effects Overlay */}
+      <EmotionOverlay
+        songName={currentSong.name}
+        songArtist={currentSong.artist}
+        isPlaying={isPlaying}
+      />
 
       {/* Audio Enhancer Panel */}
       <AudioEnhancer

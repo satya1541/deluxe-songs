@@ -84,6 +84,7 @@ export async function GET() {
           name,
           artist,
           file: `/music/${file}`,
+          fileName: file,
           cover,
         };
       })
@@ -99,3 +100,52 @@ export async function GET() {
     return NextResponse.json([], { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}));
+    let targetFileName = (body.fileName || body.file || body.name || '').trim();
+
+    if (!targetFileName) {
+      return NextResponse.json(
+        { success: false, error: 'File name or path is required for deletion' },
+        { status: 400 }
+      );
+    }
+
+    // Strip leading "/music/" if present
+    if (targetFileName.startsWith('/music/')) {
+      targetFileName = targetFileName.replace(/^\/music\//, '');
+    }
+    // Decode URI component (e.g. spaces %20)
+    targetFileName = decodeURIComponent(targetFileName);
+
+    // Sanitize to prevent path traversal
+    const safeBaseName = path.basename(targetFileName);
+    const musicDir = path.join(process.cwd(), 'public', 'music');
+    const targetFilePath = path.join(musicDir, safeBaseName);
+
+    if (!fs.existsSync(targetFilePath)) {
+      return NextResponse.json(
+        { success: false, error: `File "${safeBaseName}" not found in public/music/` },
+        { status: 404 }
+      );
+    }
+
+    // Delete the file from public/music/
+    await fs.promises.unlink(targetFilePath);
+
+    return NextResponse.json({
+      success: true,
+      message: `Successfully deleted "${safeBaseName}" from library`,
+      deletedFile: safeBaseName,
+    });
+  } catch (error: any) {
+    console.error('Error deleting song:', error);
+    return NextResponse.json(
+      { success: false, error: error?.message || 'Failed to delete song' },
+      { status: 500 }
+    );
+  }
+}
+

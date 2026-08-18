@@ -4,4 +4,6 @@ export interface Song {
   artist: string;
   file: string;
   cover: string;
+  fileName?: string;
 }
+

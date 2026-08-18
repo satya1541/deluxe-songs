@@ -46,6 +46,7 @@ export default function TopBar() {
       </div>
 
       <div className="top-right">
+
         <a
           href="https://open.spotify.com"
           target="_blank"
