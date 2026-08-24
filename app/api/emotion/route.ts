@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { s3Client, BUCKET_NAME } from '@/lib/s3';
 
 export type EmotionType =
   | 'sad_romantic'           // 🌧️ General melancholy, sadness, separation & sorrowful love
@@ -317,18 +319,47 @@ export async function POST(request: Request) {
     }
 
     const cacheKey = `${songName.toLowerCase()}::${songArtist.toLowerCase()}`;
+    const sanitizedFileName = cacheKey.replace(/[^a-z0-9]/gi, '_');
+    const s3Key = `Music/Emotions/${sanitizedFileName}.json`;
+
     if (emotionCache.has(cacheKey)) {
+      console.log('Serving emotion from memory cache:', cacheKey);
       return NextResponse.json(emotionCache.get(cacheKey));
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      const fallback = guessFallbackEmotion(songName, songArtist);
-      return NextResponse.json(fallback);
+    // Try reading from S3 cache
+    try {
+      const getCommand = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: s3Key,
+      });
+      const s3Response = await s3Client.send(getCommand);
+      if (s3Response.Body) {
+        const jsonStr = await s3Response.Body.transformToString();
+        const cachedResult: EmotionResult = JSON.parse(jsonStr);
+        console.log('Serving emotion from S3 cache:', s3Key);
+        emotionCache.set(cacheKey, cachedResult);
+        return NextResponse.json(cachedResult);
+      }
+    } catch (e: any) {
+      // Ignore if not found (NoSuchKey)
+      if (e.name !== 'NoSuchKey') {
+        console.warn('S3 Emotion Cache read error:', e.message);
+      }
     }
 
-    // Adaptive 3-Tier Neuro-Acoustic Classifier Prompt with normalized intent vectors [0.0 - 1.0]
-    const prompt = `You are an expert Indian musicologist and audio mastering engineer specializing in Bollywood, Hindi, Punjabi, Bengali, Odia, Sambalpuri, Sufi, and Indian romantic tracks.
+    let detected: EmotionType;
+    let validatedIntent: AcousticIntent;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      // Use fallback if no API key
+      const fallback = guessFallbackEmotion(songName, songArtist);
+      detected = fallback.emotion;
+      validatedIntent = fallback.intent;
+    } else {
+      // Adaptive 3-Tier Neuro-Acoustic Classifier Prompt with normalized intent vectors [0.0 - 1.0]
+      const prompt = `You are an expert Indian musicologist and audio mastering engineer specializing in Bollywood, Hindi, Punjabi, Bengali, Odia, Sambalpuri, Sufi, and Indian romantic tracks.
 
 Analyze the following song using ONLY the available metadata:
 - Song title: "${songName}"
@@ -365,86 +396,88 @@ Return ONLY valid JSON without markdown formatting in this exact format:
   }
 }`;
 
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 300,
-            responseMimeType: 'application/json',
-          },
-        }),
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 300,
+              responseMimeType: 'application/json',
+            },
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        console.warn('Gemini API returned error status:', res.status);
+        const fallback = guessFallbackEmotion(songName, songArtist);
+        detected = fallback.emotion;
+        validatedIntent = fallback.intent;
+      } else {
+        const data = await res.json();
+        const parts = data?.candidates?.[0]?.content?.parts || [];
+        const contentPart = parts.find((p: { thought?: boolean; text?: string }) => !p.thought && p.text) || parts[parts.length - 1];
+        const rawText = contentPart?.text || '{}';
+
+        let parsedEmotion: string = '';
+        let parsedIntent: Partial<AcousticIntent> = {};
+
+        try {
+          const parsed = JSON.parse(rawText);
+          parsedEmotion = (parsed.emotion || '').trim().toLowerCase();
+          if (parsed.intent && typeof parsed.intent === 'object') {
+            parsedIntent = parsed.intent;
+          }
+        } catch {
+          const match = rawText.match(/"emotion"\s*:\s*"([^"]+)"/);
+          if (match) parsedEmotion = match[1].toLowerCase();
+        }
+
+        const validEmotions: EmotionType[] = [
+          'sad_romantic',
+          'heartbroken_romantic',
+          'yearning_romantic',
+          'dark_romantic',
+          'sensual_romantic',
+          'soft_romantic',
+          'intimate_romantic',
+          'happy_romantic',
+          'hopeful_romantic',
+          'nostalgic_romantic',
+          'devotional_romantic',
+          'dreamy_romantic',
+        ];
+
+        detected = validEmotions.find(e => e === parsedEmotion) as EmotionType;
+        
+        // Check aliases if not direct match
+        if (!detected) {
+          if (parsedEmotion === 'heartbroken') detected = 'heartbroken_romantic';
+          else if (parsedEmotion === 'content_romantic') detected = 'soft_romantic';
+          else if (parsedEmotion === 'adoring_romantic') detected = 'happy_romantic';
+          else if (parsedEmotion === 'bittersweet_romantic') detected = 'nostalgic_romantic';
+          else if (parsedEmotion === 'lonely_romantic') detected = 'sad_romantic';
+        }
+
+        if (!detected) {
+          detected = guessFallbackEmotionType(songName, songArtist);
+        }
+
+        const defaultIntent = DEFAULT_INTENTS[detected] || DEFAULT_INTENTS.soft_romantic;
+        validatedIntent = {
+          warmth: clampFloat(parsedIntent.warmth, defaultIntent.warmth),
+          space: clampFloat(parsedIntent.space, defaultIntent.space),
+          intensity: clampFloat(parsedIntent.intensity, defaultIntent.intensity),
+          brightness: clampFloat(parsedIntent.brightness, defaultIntent.brightness),
+          vocalPresence: clampFloat(parsedIntent.vocalPresence, defaultIntent.vocalPresence),
+          subBassDepth: clampFloat(parsedIntent.subBassDepth, defaultIntent.subBassDepth),
+        };
       }
-    );
-
-    if (!res.ok) {
-      console.warn('Gemini API returned error status:', res.status);
-      const fallback = guessFallbackEmotion(songName, songArtist);
-      return NextResponse.json(fallback);
     }
-
-    const data = await res.json();
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    const contentPart = parts.find((p: { thought?: boolean; text?: string }) => !p.thought && p.text) || parts[parts.length - 1];
-    const rawText = contentPart?.text || '{}';
-
-    let parsedEmotion: string = '';
-    let parsedIntent: Partial<AcousticIntent> = {};
-
-    try {
-      const parsed = JSON.parse(rawText);
-      parsedEmotion = (parsed.emotion || '').trim().toLowerCase();
-      if (parsed.intent && typeof parsed.intent === 'object') {
-        parsedIntent = parsed.intent;
-      }
-    } catch {
-      const match = rawText.match(/"emotion"\s*:\s*"([^"]+)"/);
-      if (match) parsedEmotion = match[1].toLowerCase();
-    }
-
-    const validEmotions: EmotionType[] = [
-      'sad_romantic',
-      'heartbroken_romantic',
-      'yearning_romantic',
-      'dark_romantic',
-      'sensual_romantic',
-      'soft_romantic',
-      'intimate_romantic',
-      'happy_romantic',
-      'hopeful_romantic',
-      'nostalgic_romantic',
-      'devotional_romantic',
-      'dreamy_romantic',
-    ];
-
-    let detected: EmotionType = validEmotions.find(e => e === parsedEmotion) as EmotionType;
-    
-    // Check aliases if not direct match
-    if (!detected) {
-      if (parsedEmotion === 'heartbroken') detected = 'heartbroken_romantic';
-      else if (parsedEmotion === 'content_romantic') detected = 'soft_romantic';
-      else if (parsedEmotion === 'adoring_romantic') detected = 'happy_romantic';
-      else if (parsedEmotion === 'bittersweet_romantic') detected = 'nostalgic_romantic';
-      else if (parsedEmotion === 'lonely_romantic') detected = 'sad_romantic';
-    }
-
-    if (!detected) {
-      detected = guessFallbackEmotionType(songName, songArtist);
-    }
-
-    const defaultIntent = DEFAULT_INTENTS[detected] || DEFAULT_INTENTS.soft_romantic;
-    const validatedIntent: AcousticIntent = {
-      warmth: clampFloat(parsedIntent.warmth, defaultIntent.warmth),
-      space: clampFloat(parsedIntent.space, defaultIntent.space),
-      intensity: clampFloat(parsedIntent.intensity, defaultIntent.intensity),
-      brightness: clampFloat(parsedIntent.brightness, defaultIntent.brightness),
-      vocalPresence: clampFloat(parsedIntent.vocalPresence, defaultIntent.vocalPresence),
-      subBassDepth: clampFloat(parsedIntent.subBassDepth, defaultIntent.subBassDepth),
-    };
 
     const themeData = EMOTION_MAP[detected] || EMOTION_MAP.soft_romantic;
     const result: EmotionResult = {
@@ -452,6 +485,20 @@ Return ONLY valid JSON without markdown formatting in this exact format:
       ...themeData,
       intent: validatedIntent,
     };
+
+    // Save to S3 cache (await it so Vercel/Node doesn't terminate early)
+    try {
+      const putCommand = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: s3Key,
+        Body: JSON.stringify(result, null, 2),
+        ContentType: 'application/json',
+      });
+      await s3Client.send(putCommand);
+      console.log('Saved emotion to S3 cache:', s3Key);
+    } catch (e) {
+      console.error('Failed to save emotion to S3:', e);
+    }
 
     emotionCache.set(cacheKey, result);
     return NextResponse.json(result);

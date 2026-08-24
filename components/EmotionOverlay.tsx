@@ -36,7 +36,8 @@ export interface EmotionData {
 
 export interface EmotionOverlayProps {
   songName: string;
-  songArtist: string;
+  songArtist?: string;
+  isMetadataLoaded?: boolean;
   isPlaying: boolean;
   getLiveFeatures?: () => LiveAudioFeatures;
   playlist?: { name: string; artist?: string }[];
@@ -309,35 +310,8 @@ export function getInstantEmotion(name: string, artist?: string): EmotionData {
   };
 }
 
-// Persistent Browser LocalStorage Key
-const STORAGE_KEY = 'deluxe_ai_emotions_v3';
-
 // Global in-memory cache (RAM) for fastest frame-0 lookup
 const clientEmotionCache = new Map<string, EmotionData>();
-
-function getLocalStoredEmotion(key: string): EmotionData | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed[key] || null;
-  } catch {
-    return null;
-  }
-}
-
-function saveLocalStoredEmotion(key: string, data: EmotionData) {
-  if (typeof window === 'undefined') return;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    parsed[key] = data;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-  } catch (e) {
-    console.warn('LocalStorage save notice:', e);
-  }
-}
 
 function getCachedEmotion(name: string, artist?: string): EmotionData | null {
   if (!name) return null;
@@ -345,12 +319,6 @@ function getCachedEmotion(name: string, artist?: string): EmotionData | null {
   
   if (clientEmotionCache.has(cacheKey)) {
     return clientEmotionCache.get(cacheKey)!;
-  }
-  
-  const stored = getLocalStoredEmotion(cacheKey);
-  if (stored) {
-    clientEmotionCache.set(cacheKey, stored);
-    return stored;
   }
   
   return null;
@@ -372,6 +340,7 @@ function normalizeEmotionType(e: EmotionType): EmotionType {
 export default function EmotionOverlay({
   songName,
   songArtist,
+  isMetadataLoaded,
   isPlaying,
   getLiveFeatures,
 }: EmotionOverlayProps) {
@@ -386,7 +355,7 @@ export default function EmotionOverlay({
   const abortCtrlRef = useRef<AbortController | null>(null);
 
   // Engine references for persistent physical simulations
-  const rainEngineRef = useRef<RainEngineState>({
+  const rainEngineRef = useRef<any>({
     drops: [],
     staticDrops: [],
     rainStreaksBg: [],
@@ -398,19 +367,19 @@ export default function EmotionOverlay({
     fogLayers: [],
   });
 
-  const shardsRef = useRef<GlassShard[]>([]);
-  const lanternsRef = useRef<Lantern[]>([]);
-  const dandelionsRef = useRef<DandelionSeed[]>([]);
-  const petalsRef = useRef<Petal[]>([]);
-  const filmDustRef = useRef<FilmDust[]>([]);
-  const feathersRef = useRef<Feather[]>([]);
-  const embersRef = useRef<Ember[]>([]);
-  const diyasRef = useRef<DiyaLantern[]>([]);
-  const starsRef = useRef<CosmicStar[]>([]);
-  const cloudsRef = useRef<CloudLayer[]>([]);
-  const bokehRef = useRef<BokehOrb[]>([]);
-  const shootingStarsRef = useRef<ShootingStar[]>([]);
-  const energyVeinsRef = useRef<EnergyVein[]>([]);
+  const shardsRef = useRef<any[]>([]);
+  const lanternsRef = useRef<any[]>([]);
+  const dandelionsRef = useRef<any[]>([]);
+  const petalsRef = useRef<any[]>([]);
+  const filmDustRef = useRef<any[]>([]);
+  const feathersRef = useRef<any[]>([]);
+  const embersRef = useRef<any[]>([]);
+  const diyasRef = useRef<any[]>([]);
+  const starsRef = useRef<any[]>([]);
+  const cloudsRef = useRef<any[]>([]);
+  const bokehRef = useRef<any[]>([]);
+  const shootingStarsRef = useRef<any[]>([]);
+  const energyVeinsRef = useRef<any[]>([]);
 
   // Fetch song emotion ONLY for the single active song (checks browser cache first)
   const fetchEmotionForCurrentSong = useCallback(async (name: string, artist: string) => {
@@ -439,7 +408,6 @@ export default function EmotionOverlay({
       if (res.ok) {
         const data: EmotionData = await res.json();
         clientEmotionCache.set(cacheKey, data);
-        saveLocalStoredEmotion(cacheKey, data);
         setEmotionData(data);
       }
     } catch (err: any) {
@@ -461,13 +429,19 @@ export default function EmotionOverlay({
     setEmotionData(instantData);
     setIsTransitioning(true);
 
-    fetchEmotionForCurrentSong(songName, songArtist);
-
     const timeout = setTimeout(() => {
       setIsTransitioning(false);
     }, 200);
     return () => clearTimeout(timeout);
-  }, [songName, songArtist, fetchEmotionForCurrentSong]);
+  }, [songName, songArtist]);
+
+  // Run fetch precisely when song changes AND metadata is ready
+  useEffect(() => {
+    // If metadata hasn't loaded yet, hold off on the fetch to prevent duplicate S3 caches
+    if (isMetadataLoaded === false) return;
+    
+    fetchEmotionForCurrentSong(songName, songArtist || '');
+  }, [songName, songArtist, isMetadataLoaded, fetchEmotionForCurrentSong]);
 
   const activeEmotion: EmotionType = normalizeEmotionType(emotionData?.emotion);
 

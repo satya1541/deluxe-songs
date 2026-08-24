@@ -658,6 +658,7 @@ export default function MusicPlayer() {
         <EmotionOverlay
           songName={currentSong.name}
           songArtist={currentSong.artist}
+          isMetadataLoaded={!!(currentSong as any)._metadataFetched}
           isPlaying={isPlaying}
           getLiveFeatures={engine.getLiveFeatures}
         />
