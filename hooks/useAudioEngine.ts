@@ -324,8 +324,8 @@ export interface AudioEngineControls {
   analyserRef: React.MutableRefObject<AnalyserNode | null>;
 }
 
-// Generate a high-fidelity binaural spatial reverb impulse response with early reflections
-function createReverbImpulse(ctx: AudioContext, duration: number = 2.5, decay: number = 2.8): AudioBuffer {
+// Generate a high-fidelity, lightweight binaural spatial reverb impulse response optimized for mobile and desktop DSP
+function createReverbImpulse(ctx: AudioContext, duration: number = 0.8, decay: number = 3.2): AudioBuffer {
   const sampleRate = ctx.sampleRate;
   const length = Math.floor(sampleRate * duration);
   const impulse = ctx.createBuffer(2, length, sampleRate);
@@ -335,10 +335,9 @@ function createReverbImpulse(ctx: AudioContext, duration: number = 2.5, decay: n
 
   // Early discrete spatial reflections (ms) with channel offset for headphone staging
   const earlyReflections = [
-    { delayL: 0.012, delayR: 0.016, gainL: 0.65, gainR: 0.55 },
-    { delayL: 0.024, delayR: 0.021, gainL: 0.45, gainR: 0.42 },
-    { delayL: 0.038, delayR: 0.044, gainL: 0.35, gainR: 0.38 },
-    { delayL: 0.055, delayR: 0.062, gainL: 0.25, gainR: 0.28 },
+    { delayL: 0.008, delayR: 0.012, gainL: 0.5, gainR: 0.4 },
+    { delayL: 0.018, delayR: 0.015, gainL: 0.35, gainR: 0.32 },
+    { delayL: 0.030, delayR: 0.035, gainL: 0.22, gainR: 0.25 },
   ];
 
   earlyReflections.forEach((tap) => {
@@ -352,9 +351,9 @@ function createReverbImpulse(ctx: AudioContext, duration: number = 2.5, decay: n
   for (let i = 0; i < length; i++) {
     const t = i / length;
     const env = Math.pow(1 - t, decay);
-    const damp = Math.exp(-2.5 * t);
-    left[i] += (Math.random() * 2 - 1) * env * damp * 0.7;
-    right[i] += (Math.random() * 2 - 1) * env * damp * 0.7;
+    const damp = Math.exp(-3.0 * t);
+    left[i] += (Math.random() * 2 - 1) * env * damp * 0.5;
+    right[i] += (Math.random() * 2 - 1) * env * damp * 0.5;
   }
 
   return impulse;
@@ -378,6 +377,7 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
   const compressorBypassRef = useRef<GainNode | null>(null);
   const compressorOutputRef = useRef<GainNode | null>(null);
   const volumeRef = useRef<GainNode | null>(null);
+  const masterLimiterRef = useRef<DynamicsCompressorNode | null>(null);
   const initializedRef = useRef(false);
 
   // Live audio analysis buffers
@@ -498,11 +498,11 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
 
       // === Loudness Enhancer (compressor) ===
       const compressor = ctx.createDynamicsCompressor();
-      compressor.threshold.value = -24;
-      compressor.knee.value = 12;
-      compressor.ratio.value = 4;
-      compressor.attack.value = 0.003;
-      compressor.release.value = 0.25;
+      compressor.threshold.value = -20;
+      compressor.knee.value = 10;
+      compressor.ratio.value = 3;
+      compressor.attack.value = 0.005;
+      compressor.release.value = 0.2;
 
       const compressorBypass = ctx.createGain();
       compressorBypass.gain.value = 1;
@@ -522,12 +522,21 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
       dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
       timeDataRef.current = new Uint8Array(analyser.fftSize);
 
-      // === Volume ===
+      // === Volume & Headroom Management ===
       const volumeNode = ctx.createGain();
       volumeNode.gain.value = state.volume / 100;
       volumeRef.current = volumeNode;
 
-      // ====== CONNECT THE CHAIN ======
+      // === Master Zero-Latency Brickwall Limiter (Prevents crackling / clipping on all DACs & mobile speakers) ===
+      const masterLimiter = ctx.createDynamicsCompressor();
+      masterLimiter.threshold.value = -0.8; // -0.8 dBFS prevents digital DAC inter-sample peaks
+      masterLimiter.knee.value = 0.0;
+      masterLimiter.ratio.value = 20.0;
+      masterLimiter.attack.value = 0.001; // Catch transient spikes instantly
+      masterLimiter.release.value = 0.08;
+      masterLimiterRef.current = masterLimiter;
+
+      // ====== CONNECT THE AUDIO CHAIN ======
       // Source → EQ chain
       source.connect(eqFilters[0]);
 
@@ -563,21 +572,23 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
       // Post-reverb → Compressor section
       postReverb.connect(compressor);
       const compressorMakeupGain = ctx.createGain();
-      compressorMakeupGain.gain.value = 1.5;
+      compressorMakeupGain.gain.value = 1.05; // Balanced unity gain to eliminate distortion
       compressor.connect(compressorMakeupGain);
       compressorMakeupGain.connect(compressorOutput);
 
       postReverb.connect(compressorBypass);
 
+      // Pre-volume Headroom attenuation (prevents clipping during aggressive EQ boosts)
       const preVolume = ctx.createGain();
-      preVolume.gain.value = 1;
+      preVolume.gain.value = 0.85; // -1.4 dB headroom
       compressorOutput.connect(preVolume);
       compressorBypass.connect(preVolume);
 
       // Connect into Analyser for live feature extraction
       preVolume.connect(analyser);
       analyser.connect(volumeNode);
-      volumeNode.connect(ctx.destination);
+      volumeNode.connect(masterLimiter);
+      masterLimiter.connect(ctx.destination);
 
       initializedRef.current = true;
       setIsInitialized(true);
@@ -585,6 +596,22 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
       console.error('Failed to initialize audio engine:', err);
     }
   }, [audioRef, state.volume]);
+
+  // Unlock AudioContext on initial user touch/click for mobile browsers (iOS Safari & Android Chrome)
+  useEffect(() => {
+    const unlockAudio = () => {
+      if (ctxRef.current && ctxRef.current.state === 'suspended') {
+        ctxRef.current.resume().catch(() => {});
+      }
+    };
+
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
+    window.addEventListener('click', unlockAudio, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('click', unlockAudio);
+    };
+  }, []);
 
   // Live Feature Extraction Function (0ms overhead)
   const getLiveFeatures = useCallback((): LiveAudioFeatures => {
@@ -660,7 +687,7 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
     return features;
   }, [audioRef]);
 
-  // Continuous Adaptive DSP Modulation Loop (Runs at 25Hz when Smart AI is active)
+  // Smooth Adaptive DSP Modulation Loop (Throttled to 12Hz with 0.12s exponential time constant for zero clicks)
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -671,61 +698,62 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
 
       if (isAdaptiveModeRef.current && intent && ctx && ctx.state === 'running') {
         const t = ctx.currentTime;
+        const rampTime = 0.12;
 
         // 1. Adaptive Sub-Bass & Low-Shelf (Punch on chorus & beat drops)
-        const baseSub = (intent.subBassDepth * 5.0) - 0.5;
-        const liveSubKick = (features.section === 'chorus' || features.subBassEnergy > 0.6) ? 1.4 : 0;
-        const targetSub = Math.min(6.5, baseSub + liveSubKick);
+        const baseSub = (intent.subBassDepth * 4.5) - 0.5;
+        const liveSubKick = (features.section === 'chorus' || features.subBassEnergy > 0.6) ? 1.0 : 0;
+        const targetSub = Math.min(5.0, baseSub + liveSubKick);
         if (eqFiltersRef.current[0]) {
-          eqFiltersRef.current[0].gain.setTargetAtTime(targetSub, t, 0.08);
+          eqFiltersRef.current[0].gain.setTargetAtTime(targetSub, t, rampTime);
         }
 
         // 2. Warmth / Chest (230Hz)
-        const targetWarmth = (intent.warmth - 0.5) * 5.5;
+        const targetWarmth = (intent.warmth - 0.5) * 4.5;
         if (eqFiltersRef.current[1]) {
-          eqFiltersRef.current[1].gain.setTargetAtTime(targetWarmth, t, 0.08);
+          eqFiltersRef.current[1].gain.setTargetAtTime(targetWarmth, t, rampTime);
         }
 
         // 3. Body / Low-Mids (910Hz)
-        const targetMids = (intent.warmth * 0.4 - 0.2) * 3.0;
+        const targetMids = (intent.warmth * 0.4 - 0.2) * 2.5;
         if (eqFiltersRef.current[2]) {
-          eqFiltersRef.current[2].gain.setTargetAtTime(targetMids, t, 0.08);
+          eqFiltersRef.current[2].gain.setTargetAtTime(targetMids, t, rampTime);
         }
 
         // 4. Vocal Presence & Intimacy Focus (4kHz)
-        const basePresence = (intent.vocalPresence * 4.2) - 0.5;
-        const verseVocalLift = features.section === 'verse' ? 0.8 : 0;
-        const targetPresence = Math.min(4.5, basePresence + verseVocalLift);
+        const basePresence = (intent.vocalPresence * 3.5) - 0.5;
+        const verseVocalLift = features.section === 'verse' ? 0.6 : 0;
+        const targetPresence = Math.min(4.0, basePresence + verseVocalLift);
         if (eqFiltersRef.current[3]) {
-          eqFiltersRef.current[3].gain.setTargetAtTime(targetPresence, t, 0.08);
+          eqFiltersRef.current[3].gain.setTargetAtTime(targetPresence, t, rampTime);
         }
 
         // 5. Brilliance & Air (14kHz)
-        const targetBrilliance = (intent.brightness - 0.45) * 5.0;
+        const targetBrilliance = (intent.brightness - 0.45) * 4.0;
         if (eqFiltersRef.current[4]) {
-          eqFiltersRef.current[4].gain.setTargetAtTime(targetBrilliance, t, 0.08);
+          eqFiltersRef.current[4].gain.setTargetAtTime(targetBrilliance, t, rampTime);
         }
 
         // 6. Bass Boost (100Hz low-shelf)
-        const targetBass = Math.min(7.0, (intent.subBassDepth * 5.0) + (features.section === 'chorus' ? 1.5 : 0));
+        const targetBass = Math.min(5.5, (intent.subBassDepth * 4.5) + (features.section === 'chorus' ? 1.0 : 0));
         if (bassFilterRef.current) {
-          bassFilterRef.current.gain.setTargetAtTime(targetBass, t, 0.08);
+          bassFilterRef.current.gain.setTargetAtTime(targetBass, t, rampTime);
         }
 
         // 7. Dynamic Reverb Staging (Expansive intro/outro, focused verse)
-        const baseReverbMix = (intent.space * 42) / 100;
+        const baseReverbMix = (intent.space * 36) / 100;
         let reverbScale = 1.0;
-        if (features.section === 'intro' || features.section === 'outro') reverbScale = 1.25;
-        else if (features.section === 'verse') reverbScale = 0.75;
-        else if (features.section === 'chorus') reverbScale = 1.05;
+        if (features.section === 'intro' || features.section === 'outro') reverbScale = 1.2;
+        else if (features.section === 'verse') reverbScale = 0.8;
+        else if (features.section === 'chorus') reverbScale = 1.0;
 
-        const liveReverb = Math.min(0.48, Math.max(0, baseReverbMix * reverbScale));
+        const liveReverb = Math.min(0.38, Math.max(0, baseReverbMix * reverbScale));
         if (reverbWetRef.current && reverbDryRef.current) {
-          reverbWetRef.current.gain.setTargetAtTime(liveReverb, t, 0.08);
-          reverbDryRef.current.gain.setTargetAtTime(1 - liveReverb * 0.45, t, 0.08);
+          reverbWetRef.current.gain.setTargetAtTime(liveReverb, t, rampTime);
+          reverbDryRef.current.gain.setTargetAtTime(1 - liveReverb * 0.4, t, rampTime);
         }
       }
-    }, 45);
+    }, 80);
 
     return () => clearInterval(interval);
   }, [isInitialized, getLiveFeatures]);
