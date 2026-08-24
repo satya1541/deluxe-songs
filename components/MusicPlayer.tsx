@@ -206,7 +206,7 @@ export default function MusicPlayer() {
     if (aiSmartEq && activeProfile && isPlaying) {
       engine.applyAcousticProfile(activeProfile);
     }
-  }, [aiSmartEq, activeProfile, isPlaying, engine]);
+  }, [aiSmartEq, activeProfile, isPlaying, engine.applyAcousticProfile]);
 
   // AI Acoustic Profile floating toast (shows ONLY when manually enabling AI)
   const [aiToast, setAiToast] = useState<{ profile: AIAcousticProfile } | null>(null);
@@ -234,7 +234,7 @@ export default function MusicPlayer() {
       }
       return next;
     });
-  }, [activeProfile, engine]);
+  }, [activeProfile, engine.applyAcousticProfile, engine.resetToFlat]);
 
   // Play / Pause side effect controlled ONLY by isPlaying state and track changes
   useEffect(() => {
@@ -258,7 +258,7 @@ export default function MusicPlayer() {
     } else {
       audio.pause();
     }
-  }, [isPlaying, currentSong?.file, engine]);
+  }, [isPlaying, currentSong?.file, engine.isInitialized, engine.initEngine]);
 
   const togglePlay = useCallback(() => {
     setIsPlaying((prev) => !prev);
@@ -489,6 +489,7 @@ export default function MusicPlayer() {
           ref={audioRef}
           src={currentSong.file}
           preload="auto"
+          crossOrigin="anonymous"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onCanPlay={handleCanPlay}

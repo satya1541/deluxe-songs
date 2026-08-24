@@ -125,7 +125,7 @@ export default function UploadPage() {
     setIsUploading(true);
     setMessage({
       type: 'info',
-      text: `Uploading ${pendingItems.length} .mp3 song(s) directly to public/music/...`,
+      text: `Uploading ${pendingItems.length} .mp3 song(s) directly to AWS S3...`,
     });
 
     setQueue((prev) =>
@@ -153,7 +153,7 @@ export default function UploadPage() {
         );
         setMessage({
           type: 'success',
-          text: `🎉 Successfully uploaded ${data.uploadedCount} song(s) to public/music/! Zero rebuild required.`,
+          text: `🎉 Successfully uploaded ${data.uploadedCount} song(s) to AWS S3! Zero rebuild required.`,
         });
         loadExistingSongs();
         setTimeout(() => {
@@ -227,7 +227,7 @@ export default function UploadPage() {
         }
         setMessage({
           type: 'success',
-          text: `🗑️ Deleted "${songToDelete.name}" from public/music/`,
+          text: `🗑️ Deleted "${songToDelete.name}" from AWS S3`,
         });
         setSongToDelete(null);
         loadExistingSongs();
@@ -310,7 +310,7 @@ export default function UploadPage() {
             </div>
             <h1 className="card-title">Manage & Upload Songs</h1>
             <p className="card-subtitle">
-              Upload new tracks or delete existing ones directly in <code className="upload-path-tag">public/music/</code>. 
+              Upload new tracks or delete existing ones directly in <code className="upload-path-tag">AWS S3</code>. 
               The player and EC2 server detect changes in real-time.
             </p>
           </div>
@@ -451,7 +451,7 @@ export default function UploadPage() {
                 {isUploading ? (
                   <>
                     <span className="spinner-rotate" />
-                    <span>Writing to /public/music/...</span>
+                    <span>Writing to AWS S3...</span>
                   </>
                 ) : (
                   <>
@@ -575,7 +575,7 @@ export default function UploadPage() {
             <p className="delete-modal-desc">
               Are you sure you want to permanently delete{' '}
               <strong className="delete-song-highlight">"{songToDelete.name}"</strong>?
-              This will remove the file from <code className="upload-code">public/music/</code>.
+              This will remove the file from <code className="upload-code">AWS S3</code>.
             </p>
 
             <div className="delete-modal-actions">

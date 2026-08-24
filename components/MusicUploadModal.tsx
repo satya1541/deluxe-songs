@@ -103,7 +103,7 @@ export default function MusicUploadModal({
     setIsUploading(true);
     setGlobalMessage({
       type: 'info',
-      text: `Uploading ${files.length} .mp3 song(s) to /public/music/...`,
+      text: `Uploading ${files.length} .mp3 song(s) to AWS S3...`,
     });
 
     setFileStatuses((prev) =>
@@ -129,7 +129,7 @@ export default function MusicUploadModal({
         );
         setGlobalMessage({
           type: 'success',
-          text: `🎉 Successfully uploaded ${result.uploadedCount} song(s) directly to /public/music/!`,
+          text: `🎉 Successfully uploaded ${result.uploadedCount} song(s) directly to AWS S3!`,
         });
 
         // Clear files list after brief delay
@@ -199,7 +199,7 @@ export default function MusicUploadModal({
                 Upload MP3 Music
               </h2>
               <p className="upload-subtitle">
-                Add songs directly to <code className="upload-code">public/music/</code>
+                Add songs directly to <code className="upload-code">AWS S3</code>
               </p>
             </div>
           </div>

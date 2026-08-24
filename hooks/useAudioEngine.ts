@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 
 // ===== EQ Preset Definitions =====
 export interface EQPreset {
@@ -907,16 +907,21 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
       compressorBypassRef.current?.gain.setTargetAtTime(1, t, 0.03);
     }
 
-    setState(prev => ({
-      ...prev,
-      activePreset: '✨ AI Adaptive Acoustics',
-      eqGains: [...calculatedGains],
-      bassBoost: bass,
-      reverbEnabled: intent.space > 0.2,
-      reverbMix,
-      loudnessEnabled: loudness,
-      activeIntent: intent,
-    }));
+    setState(prev => {
+      if (prev.activePreset === '✨ AI Adaptive Acoustics' && prev.activeIntent === intent) {
+        return prev;
+      }
+      return {
+        ...prev,
+        activePreset: '✨ AI Adaptive Acoustics',
+        eqGains: [...calculatedGains],
+        bassBoost: bass,
+        reverbEnabled: intent.space > 0.2,
+        reverbMix,
+        loudnessEnabled: loudness,
+        activeIntent: intent,
+      };
+    });
   }, [initEngine]);
 
   const applyAcousticProfile = useCallback((profile: AIAcousticProfile, scale: number = 1.0) => {
@@ -1017,7 +1022,7 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
     };
   }, []);
 
-  return {
+  return useMemo(() => ({
     state,
     setPreset,
     setEqBand,
@@ -1035,7 +1040,25 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
     isInitialized,
     getLiveFeatures,
     analyserRef,
-  };
+  }), [
+    state,
+    setPreset,
+    setEqBand,
+    setBassBoost,
+    toggleMono,
+    toggleReverb,
+    setReverbMix,
+    toggleLoudness,
+    setSpeed,
+    setVolume,
+    applyAcousticProfile,
+    applyAcousticIntent,
+    resetToFlat,
+    initEngine,
+    isInitialized,
+    getLiveFeatures,
+    analyserRef,
+  ]);
 }
 
 export { EQ_BAND_LABELS, EQ_FREQUENCIES };

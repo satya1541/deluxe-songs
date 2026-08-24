@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { s3Client, BUCKET_NAME, PREFIX } from '@/lib/s3';
 import path from 'path';
 
 // Allowed audio extension
@@ -30,7 +31,7 @@ export async function GET() {
     status: 'active',
     endpoint: '/api/upload',
     acceptedTypes: ['.mp3'],
-    targetDirectory: '/public/music',
+    targetDirectory: `S3://${BUCKET_NAME}/${PREFIX}`,
     description: 'POST multipart/form-data with "file" or "files" field containing .mp3 audio files.',
   });
 }
@@ -68,13 +69,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const musicDir = path.join(process.cwd(), 'public', 'music');
-
-    // Ensure public/music directory exists
-    if (!fs.existsSync(musicDir)) {
-      await fs.promises.mkdir(musicDir, { recursive: true });
-    }
-
     const uploadedResults: {
       originalName: string;
       savedName: string;
@@ -106,76 +100,76 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // 3. Max size limit check (100MB per track)
-      const MAX_FILE_SIZE = 100 * 1024 * 1024;
-      if (file.size > MAX_FILE_SIZE) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // 3. File Signature / Magic Bytes Validation
+        if (!isValidMp3Buffer(buffer)) {
+          errors.push({
+            filename: originalName,
+            reason: 'Invalid file signature. Does not appear to be a genuine MP3 file.',
+          });
+          continue;
+        }
+
+        // Generate unique filename to prevent overwrites
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 8);
+        const baseName = path.basename(originalName, ext).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const uniqueName = `${baseName}_${timestamp}_${randomString}${ext}`;
+        
+        const s3Key = `${PREFIX}${uniqueName}`;
+
+        const command = new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: s3Key,
+          Body: buffer,
+          ContentType: 'audio/mpeg',
+        });
+
+        await s3Client.send(command);
+
+        uploadedResults.push({
+          originalName,
+          savedName: uniqueName,
+          size: file.size,
+          url: `/api/music/${encodeURIComponent(uniqueName)}`,
+        });
+      } catch (fileError: any) {
+        console.error(`Error processing file ${originalName}:`, fileError);
         errors.push({
           filename: originalName,
-          reason: `File size exceeds 100MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`,
+          reason: fileError.message || 'Unknown processing error',
         });
-        continue;
       }
-
-      // 4. Sanitize file name to prevent path traversal
-      const sanitizedBase = path
-        .basename(originalName, ext)
-        .replace(/[^a-zA-Z0-9\s._-]/g, '')
-        .trim();
-
-      const safeFileName = `${sanitizedBase || 'song'}.mp3`;
-      const targetFilePath = path.join(musicDir, safeFileName);
-
-      // 5. Read arrayBuffer and validate MP3 header content
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      if (!isValidMp3Buffer(buffer)) {
-        errors.push({
-          filename: originalName,
-          reason: 'Invalid MP3 audio content or corrupt file header.',
-        });
-        continue;
-      }
-
-      // 6. Write file directly to public/music/
-      await fs.promises.writeFile(targetFilePath, buffer);
-
-      uploadedResults.push({
-        originalName,
-        savedName: safeFileName,
-        size: file.size,
-        url: `/music/${encodeURIComponent(safeFileName)}`,
-      });
     }
 
-    if (uploadedResults.length === 0) {
+    const allFailed = uploadedResults.length === 0;
+
+    if (allFailed) {
       return NextResponse.json(
         {
           success: false,
-          error: 'No valid .mp3 files were uploaded.',
+          error: 'All file uploads failed due to validation errors.',
           details: errors,
         },
-        { status: 400 }
+        { status: 422 }
       );
     }
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: `Successfully uploaded ${uploadedResults.length} .mp3 file(s) directly to public/music/`,
-        uploadedCount: uploadedResults.length,
-        files: uploadedResults,
-        ...(errors.length > 0 ? { warnings: errors } : {}),
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
+      message: `Successfully uploaded ${uploadedResults.length} file(s) to S3.`,
+      files: uploadedResults,
+      errors: errors.length > 0 ? errors : undefined,
+    });
   } catch (error: any) {
-    console.error('Error handling music upload:', error);
+    console.error('Upload handler error:', error);
     return NextResponse.json(
       {
         success: false,
-        error: 'Server error while saving uploaded music.',
-        details: error?.message || String(error),
+        error: error.message || 'Internal server error during upload.',
       },
       { status: 500 }
     );

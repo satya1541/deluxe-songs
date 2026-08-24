@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
-import { parseFile } from 'music-metadata';
+import { ListObjectsV2Command, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { s3Client, BUCKET_NAME, PREFIX } from '@/lib/s3';
 import { Song } from '@/types/music';
+import path from 'path';
 
 const FALLBACK_COVERS = [
   'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80',
@@ -66,61 +67,45 @@ function parseFilename(fileName: string): { name: string; artist: string } {
 
 export async function GET() {
   try {
-    const musicDir = path.join(process.cwd(), 'public', 'music');
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: PREFIX,
+    });
 
-    if (!fs.existsSync(musicDir)) {
-      return NextResponse.json([]);
-    }
+    const response = await s3Client.send(command);
+    const contents = response.Contents || [];
 
-    const files = await fs.promises.readdir(musicDir);
     const audioExtensions = ['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.aac'];
-    const audioFiles = files.filter((file) => {
-      const ext = path.extname(file).toLowerCase();
+    
+    // Filter out the "Music/" folder object itself and keep only audio files
+    const audioFiles = contents.filter((item) => {
+      if (!item.Key || item.Key === PREFIX) return false;
+      const ext = path.extname(item.Key).toLowerCase();
       return audioExtensions.includes(ext);
     });
 
     const songs: Song[] = await Promise.all(
       audioFiles.map(async (file, index) => {
-        const filePath = path.join(musicDir, file);
-        let name = '';
-        let artist = '';
-        let cover = FALLBACK_COVERS[index % FALLBACK_COVERS.length];
+        // file.Key is like "Music/song.mp3"
+        const fileName = path.basename(file.Key!);
+        const fallback = parseFilename(fileName);
+        
+        let name = cleanTitle(fallback.name) || fileName.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
+        let artist = cleanArtist(fallback.artist);
+        
+        // Pass index to cover route so it can fallback to the correct default image
+        let cover = `/api/cover/${encodeURIComponent(fileName)}?fallbackIndex=${index % FALLBACK_COVERS.length}`;
 
-        try {
-          // Extract ID3 tags & embedded picture from MP3 metadata
-          const metadata = await parseFile(filePath, { duration: false });
-          const common = metadata.common;
-
-          if (common.title) name = cleanTitle(common.title);
-          if (common.artist) artist = cleanArtist(common.artist);
-
-          // Check for embedded album cover art image
-          if (common.picture && common.picture.length > 0) {
-            const pic = common.picture[0];
-            const base64Data = Buffer.from(pic.data).toString('base64');
-            cover = `data:${pic.format};base64,${base64Data}`;
-          }
-        } catch (err) {
-          console.warn(`Could not parse ID3 metadata for ${file}:`, err);
-        }
-
-        // Fallback to filename parsing if ID3 tags are missing
-        if (!name || !artist) {
-          const fallback = parseFilename(file);
-          if (!name) name = fallback.name;
-          if (!artist) artist = fallback.artist;
-        }
-
-        // Final sanitation pass
-        name = cleanTitle(name) || file.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
-        artist = cleanArtist(artist);
+        // Generate presigned URL directly to eliminate the 302 redirect delay
+        const getCommand = new GetObjectCommand({ Bucket: BUCKET_NAME, Key: file.Key! });
+        const presignedUrl = await getSignedUrl(s3Client, getCommand, { expiresIn: 3600 });
 
         return {
           id: index + 1,
           name,
           artist,
-          file: `/api/music/${encodeURIComponent(file)}`,
-          fileName: file,
+          file: presignedUrl,
+          fileName,
           cover,
         };
       })
@@ -132,7 +117,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Error scanning music directory:', error);
+    console.error('Error scanning S3 bucket:', error);
     return NextResponse.json([], { status: 500 });
   }
 }
@@ -160,30 +145,25 @@ export async function DELETE(request: Request) {
 
     // Sanitize to prevent path traversal
     const safeBaseName = path.basename(targetFileName);
-    const musicDir = path.join(process.cwd(), 'public', 'music');
-    const targetFilePath = path.join(musicDir, safeBaseName);
+    const s3Key = `${PREFIX}${safeBaseName}`;
 
-    if (!fs.existsSync(targetFilePath)) {
-      return NextResponse.json(
-        { success: false, error: `File "${safeBaseName}" not found in public/music/` },
-        { status: 404 }
-      );
-    }
+    const command = new DeleteObjectCommand({
+      Bucket: BUCKET_NAME,
+      Key: s3Key,
+    });
 
-    // Delete the file from public/music/
-    await fs.promises.unlink(targetFilePath);
+    await s3Client.send(command);
 
     return NextResponse.json({
       success: true,
-      message: `Successfully deleted "${safeBaseName}" from library`,
+      message: `Successfully deleted "${safeBaseName}" from S3 library`,
       deletedFile: safeBaseName,
     });
   } catch (error: any) {
-    console.error('Error deleting song:', error);
+    console.error('Error deleting song from S3:', error);
     return NextResponse.json(
       { success: false, error: error?.message || 'Failed to delete song' },
       { status: 500 }
     );
   }
 }
-
