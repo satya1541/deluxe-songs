@@ -184,6 +184,50 @@ export default function MusicPlayer() {
   const currentSongIndex = queue[queueIndex] ?? 0;
   const currentSong: Song | undefined = songs[currentSongIndex] || songs[0];
 
+  // Dynamically fetch true ID3 metadata (Title/Artist) for the current song
+  useEffect(() => {
+    if (!currentSong || (currentSong as any)._metadataFetched || !currentSong.fileName) return;
+
+    const fetchMetadata = async () => {
+      try {
+        const res = await fetch(`/api/metadata/${encodeURIComponent(currentSong.fileName!)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.title || data.artist) {
+            setSongs((prev) => {
+              const next = [...prev];
+              const idx = next.findIndex(s => s.id === currentSong.id);
+              if (idx !== -1) {
+                next[idx] = {
+                  ...next[idx],
+                  name: data.title || next[idx].name,
+                  artist: data.artist || next[idx].artist,
+                  _metadataFetched: true
+                } as any;
+              }
+              return next;
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch ID3 metadata:', err);
+      }
+      
+      // Mark as fetched to avoid retrying on failure
+      setSongs((prev) => {
+        const next = [...prev];
+        const idx = next.findIndex(s => s.id === currentSong.id);
+        if (idx !== -1) {
+          next[idx] = { ...next[idx], _metadataFetched: true } as any;
+        }
+        return next;
+      });
+    };
+
+    fetchMetadata();
+  }, [currentSong]);
+
   // AI Smart Acoustics (Auto Spatial Audio EQ) State
   const [aiSmartEq, setAiSmartEq] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;

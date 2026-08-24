@@ -169,12 +169,12 @@ button {
 }
 
 .topbar-visuals-btn {
-  display: none;
+  display: flex; /* Always visible as an option */
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
   background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -183,6 +183,8 @@ button {
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
   transition: all 0.22s ease;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .topbar-visuals-btn:hover {
@@ -508,10 +510,6 @@ button {
 
   .top-right {
     gap: 12px;
-  }
-  
-  .topbar-visuals-btn.mobile-only {
-    display: inline-flex;
   }
 
   .music-link span {

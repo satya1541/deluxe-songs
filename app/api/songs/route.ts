@@ -4,6 +4,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3Client, BUCKET_NAME, PREFIX } from '@/lib/s3';
 import { Song } from '@/types/music';
 import path from 'path';
+import { cleanTitle, cleanArtist } from '@/lib/text-cleaner';
 
 const FALLBACK_COVERS = [
   'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80',
@@ -16,53 +17,28 @@ const FALLBACK_COVERS = [
   'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&auto=format&fit=crop&q=80',
 ];
 
-function cleanTitle(raw: string): string {
-  if (!raw) return '';
-  return raw
-    .replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '')
-    .replace(/\s*[-–—:]?\s*(PagalNew|PagalWorld|PagalSongs|SongsPk|DjPunjab|Mp3Tau|PenduJatt|KoshalWorld|OdiaBazar|RiskyjaTT|NaaSongs|MrJatt|DJMaza|Hungama|Gaana|JioSaavn)(\.Com(\.Se)?)?/gi, '')
-    .replace(/\b(320|128|192|256)\s*kbps\b/gi, '')
-    .replace(/\b(mp3|audio|song|track|download|full audio|lyrical video|full video)\b/gi, '')
-    .replace(/\([^)]*(Pagal|Jatt|World|Bazar|Songs|Music|Kbps|RingTone|Com)[^)]*\)/gi, '')
-    .replace(/\[[^\]]*\]/g, '')
-    .replace(/\s*[-–—]\s*$/, '')
-    .replace(/^\s*[-–—]\s*/, '')
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
-function cleanArtist(raw: string): string {
-  if (!raw) return 'Deluxe Artist';
-  const cleaned = raw
-    .replace(/\s*[-–—:]?\s*(PagalNew|PagalWorld|PagalSongs|SongsPk|DjPunjab|Mp3Tau|PenduJatt|KoshalWorld|OdiaBazar|RiskyjaTT|NaaSongs|MrJatt|DJMaza)(\.Com(\.Se)?)?/gi, '')
-    .replace(/\b(320|128|192|256)\s*kbps\b/gi, '')
-    .replace(/\b(mp3|download)\b/gi, '')
-    .replace(/\([^)]*(Pagal|Jatt|World|Bazar|Songs|Music|Kbps|Com)[^)]*\)/gi, '')
-    .replace(/\[[^\]]*\]/g, '')
-    .replace(/\s*[-–—]\s*$/, '')
-    .replace(/^\s*[-–—]\s*/, '')
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (!cleaned || cleaned.toLowerCase() === 'deluxe mix' || /^(pagal|jatt|world|bazar|dj)/i.test(cleaned)) {
-    return 'Deluxe Artist';
-  }
-  return cleaned;
-}
 
 function parseFilename(fileName: string): { name: string; artist: string } {
-  const baseName = fileName.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
-  const cleaned = cleanTitle(baseName);
+  // Remove extension
+  let cleaned = fileName.replace(/\.(mp3|wav|ogg|m4a|flac)$/i, '');
+  
+  // Clean up common quality/website tags from filename
+  cleaned = cleaned.replace(/320 ?Kbps|128 ?Kbps|PagalNew|Pagalworld|Paglasongs/gi, '');
+  cleaned = cleaned.trim();
 
-  const parts = cleaned.split(/[-–—]/).map((p) => p.trim()).filter(Boolean);
+  // Try splitting by common separators like hyphens
+  const parts = cleaned.split(/[-–—_]/).map((p) => p.trim()).filter(Boolean);
 
   if (parts.length >= 2) {
+    // Usually "Title - Artist" or "Artist - Title"
     return { name: parts[0], artist: cleanArtist(parts.slice(1).join(' - ')) };
   }
 
-  return { name: cleaned || fileName, artist: 'Deluxe Artist' };
+  // If no hyphen found, try to guess. The whole thing might be the title.
+  // The artist can't be easily guessed, so we'll leave it as "Unknown Artist".
+  // (We'll fetch actual metadata dynamically on the client side!)
+  return { name: cleaned || fileName, artist: 'Unknown Artist' };
 }
 
 export async function GET() {
