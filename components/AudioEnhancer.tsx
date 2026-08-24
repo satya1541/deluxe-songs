@@ -360,41 +360,6 @@ export default function AudioEnhancer({
               />
               <span className="slider-value">{state.speed.toFixed(1)}x</span>
             </div>
-
-            {/* Visual FX / Battery Saver Eco Mode */}
-            <div className="slider-row fx-toggle-row">
-              <div>
-                <span className="slider-label">Visual FX (60 FPS)</span>
-                <span className="slider-subtext">Toggle animations to save battery on mobile</span>
-              </div>
-              <button
-                type="button"
-                className="toggle-switch toggle-on"
-                id="enhancer-fx-toggle"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    const stored = localStorage.getItem('deluxe_animations_enabled') !== 'false';
-                    const next = !stored;
-                    localStorage.setItem('deluxe_animations_enabled', String(next));
-                    if (next) {
-                      document.body.classList.remove('no-animations');
-                    } else {
-                      document.body.classList.add('no-animations');
-                    }
-                    window.dispatchEvent(new CustomEvent('toggle-animations', { detail: { enabled: next } }));
-                    const btn = document.getElementById('enhancer-fx-toggle');
-                    if (btn) {
-                      if (next) btn.classList.add('toggle-on');
-                      else btn.classList.remove('toggle-on');
-                    }
-                  }
-                }}
-                role="switch"
-                aria-label="Toggle Visual Animations"
-              >
-                <div className="toggle-knob" />
-              </button>
-            </div>
           </div>
         </div>
       </div>

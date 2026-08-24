@@ -21,7 +21,7 @@ interface CinemaModeProps {
   engine: AudioEngineControls;
   aiSmartEq: boolean;
   onToggleAiSmartEq: () => void;
-  onOpenEnhancer?: () => void;
+  onOpenEnhancer: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -53,10 +53,9 @@ export default function CinemaMode({
 
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
-  // Mouse / Touch idle detection: Auto-hide controls after 2.5s
-  const handleUserActivity = useCallback(() => {
+  // Mouse idle detection: Auto-hide controls after 2.5 seconds of inactivity
+  const handleMouseMove = useCallback(() => {
     setControlsVisible(true);
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     idleTimerRef.current = setTimeout(() => {
@@ -69,14 +68,12 @@ export default function CinemaMode({
   useEffect(() => {
     if (!isActive) return;
 
-    window.addEventListener('mousemove', handleUserActivity);
-    window.addEventListener('touchstart', handleUserActivity);
+    window.addEventListener('mousemove', handleMouseMove);
     return () => {
-      window.removeEventListener('mousemove', handleUserActivity);
-      window.removeEventListener('touchstart', handleUserActivity);
+      window.removeEventListener('mousemove', handleMouseMove);
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
-  }, [isActive, handleUserActivity]);
+  }, [isActive, handleMouseMove]);
 
   // Fullscreen toggle helper with cross-browser support
   useEffect(() => {
@@ -91,38 +88,6 @@ export default function CinemaMode({
       }
     }
   }, [isActive]);
-
-  // Touch swipe gestures (Swipe left: Next, Swipe right: Prev, Swipe down: Exit)
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      touchStartRef.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-        time: Date.now(),
-      };
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStartRef.current || e.changedTouches.length === 0) return;
-    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
-    const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
-    const elapsed = Date.now() - touchStartRef.current.time;
-
-    // Fast swipe detection (< 450ms)
-    if (elapsed < 450) {
-      if (Math.abs(deltaX) > 60 && Math.abs(deltaY) < 40) {
-        if (deltaX < 0) {
-          onNext(); // Swipe Left -> Next
-        } else {
-          onPrev(); // Swipe Right -> Prev
-        }
-      } else if (deltaY > 80 && Math.abs(deltaX) < 50) {
-        onClose(); // Swipe Down -> Exit Cinema Mode
-      }
-    }
-    touchStartRef.current = null;
-  };
 
   // Precise Seek & Drag Calculation
   const calculateSeekTime = useCallback((clientX: number): number => {
@@ -170,12 +135,10 @@ export default function CinemaMode({
   return (
     <div
       className={`cinema-overlay emotion-cinema-${emotion || 'soft_romantic'} ${controlsVisible ? 'controls-shown' : 'controls-hidden'}`}
-      onMouseMove={handleUserActivity}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onMouseMove={handleMouseMove}
       aria-label="Cinema Fullscreen Immersion"
     >
-      {/* Top Floating Bar: Shows current song name & artist */}
+      {/* Top Floating Bar: Shows current song name & artist in place of Deluxe Cinema Immersion */}
       <div className={`cinema-top-bar ${controlsVisible ? 'bar-visible' : 'bar-hidden'}`}>
         <div className="cinema-brand">
           <span className="cinema-sparkle">✨</span>
@@ -191,28 +154,20 @@ export default function CinemaMode({
             onClick={onClose}
             title="Exit Cinema Mode (Esc / F)"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
             </svg>
-            <span className="cinema-exit-text">Exit</span>
-            <kbd className="cinema-exit-kbd">F</kbd>
+            <span>Exit (F)</span>
           </button>
         </div>
       </div>
 
-      {/* Main Center Stage: Tap vinyl to play/pause */}
+      {/* Main Center Stage: Full spinning circular album cover (spinning like outside player) */}
       <div className="cinema-stage stage-centered">
         <div className="cinema-vinyl-wrap">
           <div className={`cinema-vinyl-glow aura-emotion-${emotion || 'soft_romantic'}`} />
-
-          <div
-            className="cinema-album-wrapper"
-            onClick={onTogglePlay}
-            role="button"
-            tabIndex={0}
-            aria-label={isPlaying ? 'Pause song' : 'Play song'}
-            title="Tap to Play / Pause"
-          >
+          
+          <div className="cinema-album-wrapper">
             <div className={`cinema-album-art ${isPlaying ? 'playing' : ''}`}>
               <Image
                 src={currentSong.cover}
@@ -237,7 +192,7 @@ export default function CinemaMode({
       {/* Bottom Floating Glass Control Deck */}
       <div className={`cinema-control-deck ${controlsVisible ? 'deck-visible' : 'deck-hidden'}`}>
         <div className="cinema-deck-glass">
-          {/* Progress Timeline with smooth touch scrubber */}
+          {/* Progress Timeline with smooth forward/backward seek & drag */}
           <div className="cinema-progress-row">
             <span className="cinema-time-current">{formatTime(displayTime)}</span>
             <div
@@ -269,7 +224,7 @@ export default function CinemaMode({
                 title="Toggle AI Smart Acoustics"
               >
                 <span className="ai-btn-sparkle">✨</span>
-                <span className="ai-btn-text">AI Smart EQ</span>
+                <span>AI Smart EQ</span>
               </button>
             </div>
 

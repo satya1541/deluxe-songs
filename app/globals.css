@@ -130,54 +130,7 @@ button {
 .top-right {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-/* Visual FX / Eco Mode (Disable Animations) Toggle Button */
-.topbar-fx-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.topbar-fx-btn.fx-active {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(249, 115, 22, 0.25));
-  border-color: rgba(168, 85, 247, 0.55);
-  color: #fed7aa;
-}
-
-.topbar-fx-btn.fx-eco {
-  background: rgba(74, 222, 128, 0.15);
-  border-color: rgba(74, 222, 128, 0.45);
-  color: #86efac;
-}
-
-.topbar-fx-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
-}
-
-.topbar-fx-btn .fx-icon {
-  font-size: 13px;
-  line-height: 1;
-}
-
-.topbar-fx-btn .fx-text {
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+  gap: 16px;
 }
 
 /* Fullscreen Cinema Immersion Button in Top Right */
@@ -215,6 +168,28 @@ button {
   transform: scale(1.1);
 }
 
+.topbar-visuals-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  transition: all 0.22s ease;
+}
+
+.topbar-visuals-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
 .topbar-kbd {
   font-family: inherit;
   font-size: 9.5px;
@@ -225,29 +200,6 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fed7aa;
   margin-left: 2px;
-}
-
-/* Global No-Animations Mode (Eco Mode) */
-body.no-animations .album-art,
-body.no-animations .cinema-album-art {
-  animation: none !important;
-}
-
-body.no-animations .online-dot {
-  animation: none !important;
-}
-
-.fx-toggle-row {
-  margin-top: 10px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.slider-subtext {
-  display: block;
-  font-size: 10.5px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 2px;
 }
 
 .music-link {
@@ -322,7 +274,7 @@ body.no-animations .online-dot {
 /* ===== Music Player ===== */
 .music-player {
   position: fixed;
-  bottom: 8vh;
+  bottom: max(8vh, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 100;
@@ -549,7 +501,7 @@ body.no-animations .online-dot {
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .top-bar {
     padding: 12px 16px;
   }
@@ -557,38 +509,114 @@ body.no-animations .online-dot {
   .top-right {
     gap: 12px;
   }
+  
+  .topbar-visuals-btn.mobile-only {
+    display: inline-flex;
+  }
 
   .music-link span {
     display: none;
   }
+  
+  .topbar-cinema-btn {
+    padding: 5px 10px;
+  }
+  
+  .topbar-kbd {
+    display: none;
+  }
 
   .player-inner {
-    min-width: 320px;
-    padding: 8px 14px 8px 8px;
-    gap: 10px;
+    width: 100%;
+    padding: 10px 14px 10px 10px;
+    gap: 12px;
   }
 
   .album-art-wrapper {
-    width: 42px;
-    height: 42px;
+    width: 56px;
+    height: 56px;
   }
 
   .song-name {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .artist-name {
-    font-size: 10px;
+    font-size: 12px;
+  }
+  
+  .control-btn.play-btn {
+    width: 42px;
+    height: 42px;
+  }
+  
+  .control-btn.prev-btn,
+  .control-btn.next-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .music-player {
+    padding: 0 16px;
+    bottom: max(3vh, env(safe-area-inset-bottom));
+  }
+  
+  /* Cinema Mode Responsiveness */
+  .cinema-stage {
+    flex-direction: column;
+    padding: 0 20px;
+    gap: 30px;
+  }
+  
+  .cinema-vinyl-glow {
+    width: clamp(260px, 80vw, 400px);
+    height: clamp(260px, 80vw, 400px);
+  }
+  
+  .cinema-album-wrapper {
+    width: clamp(190px, 60vw, 290px);
+    height: clamp(190px, 60vw, 290px);
+  }
+  
+  .cinema-song-title {
+    font-size: 20px;
+  }
+  
+  .cinema-control-deck {
+    padding: 0 16px 24px 16px;
+    padding-bottom: max(24px, env(safe-area-inset-bottom));
+  }
+  
+  .cinema-deck-glass {
+    padding: 12px 16px;
+    border-radius: 20px;
+  }
+  
+  .cinema-buttons-row {
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+  }
+  
+  .cinema-main-transport {
+    flex: 1 1 100%;
+    justify-content: center;
+    order: -1;
+  }
+  
+  .cinema-left-actions, .cinema-right-actions {
+    flex: 1;
+    justify-content: center;
   }
 }
 
-@media (max-width: 420px) {
-  .player-inner {
-    min-width: 280px;
-  }
-
+@media (max-width: 480px) {
   .top-center {
     display: none;
+  }
+  
+  .title-text {
+    font-size: clamp(50px, 15vw, 90px);
   }
 }
 
@@ -3470,474 +3498,6 @@ body.no-animations .online-dot {
   color: #ffffff;
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
 }
-
-/* ==========================================================================
-   RESPONSIVE DESIGN SYSTEM: TABLET & MOBILE VIEWPORTS
-   ========================================================================== */
-
-/* --- TABLET & IPAD (<= 1024px) --- */
-@media (max-width: 1024px) {
-  .top-bar {
-    padding: 16px 24px;
-  }
-
-  .music-player {
-    bottom: max(20px, env(safe-area-inset-bottom, 20px));
-    max-width: 540px;
-    padding: 0 20px;
-  }
-
-  .center-content {
-    padding-bottom: 25vh;
-  }
-
-  .title-text {
-    font-size: clamp(60px, 9vw, 120px);
-  }
-
-  .cinema-album-wrapper {
-    width: 250px;
-    height: 250px;
-  }
-
-  .cinema-vinyl-glow {
-    width: 340px;
-    height: 340px;
-  }
-
-  .enhancer-panel {
-    max-width: 620px;
-  }
-}
-
-/* --- SMALL TABLETS & LARGE PHONES (<= 768px) --- */
-@media (max-width: 768px) {
-  .top-bar {
-    padding: max(12px, env(safe-area-inset-top, 12px)) 16px 0 16px;
-  }
-
-  .top-right {
-    gap: 10px;
-  }
-
-  .music-link-text,
-  .external-icon,
-  .topbar-kbd,
-  .cinema-exit-kbd {
-    display: none;
-  }
-
-  .music-link {
-    padding: 7px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-  }
-
-  .topbar-cinema-btn {
-    padding: 6px 12px;
-    font-size: 11.5px;
-    gap: 5px;
-  }
-
-  .center-content {
-    padding-bottom: 22vh;
-  }
-
-  .title-text {
-    font-size: clamp(50px, 12vw, 90px);
-  }
-
-  .music-player {
-    bottom: max(16px, env(safe-area-inset-bottom, 16px));
-    padding: 0 14px;
-    max-width: 100%;
-  }
-
-  .player-inner {
-    padding: 10px 16px 10px 10px;
-    gap: 12px;
-    border-radius: 9999px;
-  }
-
-  .album-art-wrapper {
-    width: 64px;
-    height: 64px;
-  }
-
-  .song-name {
-    font-size: 14px;
-  }
-
-  .artist-name {
-    font-size: 12px;
-  }
-
-  .player-controls {
-    gap: 6px;
-  }
-
-  .control-btn {
-    width: 36px;
-    height: 36px;
-  }
-
-  .play-btn {
-    width: 44px;
-    height: 44px;
-  }
-
-  /* Cinema Mode Tablet Responsive */
-  .cinema-top-bar {
-    padding: max(12px, env(safe-area-inset-top, 12px)) 20px 0 20px;
-  }
-
-  .cinema-brand-title {
-    font-size: 14px;
-  }
-
-  .cinema-brand-artist {
-    font-size: 12px;
-  }
-
-  .cinema-album-wrapper {
-    width: 220px;
-    height: 220px;
-  }
-
-  .cinema-vinyl-glow {
-    width: 300px;
-    height: 300px;
-  }
-
-  .cinema-song-title {
-    font-size: 20px;
-  }
-
-  .cinema-artist-name {
-    font-size: 13.5px;
-  }
-
-  .cinema-control-deck {
-    padding: 0 20px max(20px, env(safe-area-inset-bottom, 20px)) 20px;
-  }
-
-  .cinema-deck-glass {
-    padding: 14px 20px;
-    border-radius: 24px;
-  }
-
-  .cinema-volume-wrap {
-    display: none; /* Mobile phones use hardware volume keys */
-  }
-
-  .enhancer-panel {
-    width: 100%;
-    max-height: 85vh;
-    border-radius: 24px 24px 0 0;
-  }
-}
-
-/* --- MOBILE PHONES PORTRAIT (<= 480px) --- */
-@media (max-width: 480px) {
-  .top-bar {
-    padding: max(10px, env(safe-area-inset-top, 10px)) 12px 0 12px;
-  }
-
-  .top-center {
-    position: static;
-    transform: none;
-  }
-
-  .time {
-    font-size: 12px;
-  }
-
-  .online-count {
-    font-size: 12px;
-  }
-
-  .online-label {
-    font-size: 11px;
-  }
-
-  .top-right {
-    gap: 6px;
-  }
-
-  .topbar-cinema-btn {
-    padding: 5px 9px;
-    font-size: 11px;
-    gap: 4px;
-  }
-
-  .topbar-cinema-label {
-    font-size: 11px;
-  }
-
-  .center-content {
-    padding-bottom: 20vh;
-  }
-
-  .title-text {
-    font-size: clamp(42px, 13vw, 75px);
-  }
-
-  .music-player {
-    bottom: max(12px, env(safe-area-inset-bottom, 12px));
-    padding: 0 8px;
-  }
-
-  .player-inner {
-    padding: 8px 12px 8px 8px;
-    gap: 10px;
-    border-radius: 24px;
-  }
-
-  .album-art-wrapper {
-    width: 52px;
-    height: 52px;
-  }
-
-  .song-name {
-    font-size: 13px;
-    max-width: 130px;
-  }
-
-  .artist-name {
-    font-size: 11px;
-    max-width: 130px;
-  }
-
-  .progress-bar-container {
-    margin-top: 4px;
-  }
-
-  .time-display {
-    font-size: 9.5px;
-  }
-
-  .player-controls {
-    gap: 4px;
-  }
-
-  .control-btn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .play-btn {
-    width: 38px;
-    height: 38px;
-  }
-
-  .play-btn svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .ai-acoustics-btn .ai-btn-label {
-    font-size: 10px;
-  }
-
-  /* Cinema Mode Mobile Portrait */
-  .cinema-top-bar {
-    padding: max(10px, env(safe-area-inset-top, 10px)) 14px 0 14px;
-  }
-
-  .cinema-brand-title {
-    font-size: 13px;
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .cinema-brand-artist {
-    display: none; /* Prevent top line wrap on narrow screens */
-  }
-
-  .cinema-exit-btn {
-    padding: 6px 12px;
-    font-size: 11px;
-    gap: 4px;
-  }
-
-  .cinema-stage {
-    padding: 0 16px;
-  }
-
-  .cinema-album-wrapper {
-    width: 190px;
-    height: 190px;
-    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.85);
-  }
-
-  .cinema-vinyl-glow {
-    width: 240px;
-    height: 240px;
-    filter: blur(50px);
-  }
-
-  .cinema-song-meta {
-    margin-top: 16px;
-  }
-
-  .cinema-song-title {
-    font-size: 18px;
-  }
-
-  .cinema-artist-name {
-    font-size: 13px;
-    margin-top: 4px;
-  }
-
-  .cinema-control-deck {
-    padding: 0 12px max(14px, env(safe-area-inset-bottom, 14px)) 12px;
-  }
-
-  .cinema-deck-glass {
-    padding: 10px 16px;
-    border-radius: 20px;
-    gap: 8px;
-  }
-
-  .cinema-progress-row {
-    gap: 8px;
-  }
-
-  .cinema-time-current,
-  .cinema-time-duration {
-    font-size: 10.5px;
-    min-width: 28px;
-  }
-
-  .ai-btn-text {
-    display: none; /* Keep sparkle icon for compact elegance */
-  }
-
-  .cinema-tool-btn {
-    padding: 6px 10px;
-    border-radius: 8px;
-  }
-
-  .cinema-main-transport {
-    gap: 12px;
-  }
-
-  .cinema-transport-btn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .cinema-play-btn {
-    width: 44px;
-    height: 44px;
-  }
-
-  .cinema-play-btn svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-/* --- MOBILE LANDSCAPE VIEWPORT (Height <= 550px) --- */
-@media (max-height: 550px) and (orientation: landscape) {
-  .top-bar {
-    padding: 8px 20px 0 20px;
-  }
-
-  .center-content {
-    padding-bottom: 18vh;
-  }
-
-  .title-text {
-    font-size: clamp(32px, 7vw, 55px);
-  }
-
-  .music-player {
-    bottom: 8px;
-    max-width: 480px;
-  }
-
-  .player-inner {
-    padding: 6px 12px 6px 6px;
-    gap: 10px;
-  }
-
-  .album-art-wrapper {
-    width: 44px;
-    height: 44px;
-  }
-
-  /* Cinema Mode Landscape Layout: Side-by-Side */
-  .cinema-top-bar {
-    padding: 8px 24px 0 24px;
-  }
-
-  .cinema-stage {
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: 32px;
-    padding: 0 24px;
-  }
-
-  .cinema-vinyl-wrap {
-    flex-direction: row;
-    align-items: center;
-    gap: 24px;
-  }
-
-  .cinema-album-wrapper {
-    width: 140px;
-    height: 140px;
-  }
-
-  .cinema-vinyl-glow {
-    width: 180px;
-    height: 180px;
-    filter: blur(40px);
-  }
-
-  .cinema-song-meta {
-    margin-top: 0;
-    text-align: left;
-  }
-
-  .cinema-song-title {
-    font-size: 16px;
-  }
-
-  .cinema-artist-name {
-    font-size: 12px;
-  }
-
-  .cinema-control-deck {
-    padding: 0 24px 8px 24px;
-  }
-
-  .cinema-deck-glass {
-    padding: 8px 18px;
-    gap: 6px;
-    border-radius: 18px;
-  }
-
-  .cinema-volume-wrap {
-    display: none;
-  }
-
-  .cinema-play-btn {
-    width: 40px;
-    height: 40px;
-  }
-
-  .cinema-transport-btn {
-    width: 30px;
-    height: 30px;
-  }
-}
-
 
 
 

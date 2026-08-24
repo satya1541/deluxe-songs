@@ -114,6 +114,7 @@ export default function MusicPlayer() {
   const [duration, setDuration] = useState<number>(0);
   const [enhancerOpen, setEnhancerOpen] = useState<boolean>(false);
   const [cinemaOpen, setCinemaOpen] = useState<boolean>(false);
+  const [visualsEnabled, setVisualsEnabled] = useState<boolean>(true);
 
   // Audio engine
   const engine = useAudioEngine(audioRef);
@@ -397,12 +398,21 @@ export default function MusicPlayer() {
     const handleCustomCinemaToggle = () => {
       setCinemaOpen((prev) => !prev);
     };
+    
+    const handleToggleVisuals = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== undefined) {
+        setVisualsEnabled(customEvent.detail);
+      }
+    };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('toggle-cinema-mode', handleCustomCinemaToggle);
+    window.addEventListener('toggle-visuals', handleToggleVisuals);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('toggle-cinema-mode', handleCustomCinemaToggle);
+      window.removeEventListener('toggle-visuals', handleToggleVisuals);
     };
   }, [togglePlay, adjustVolume]);
 
@@ -479,8 +489,6 @@ export default function MusicPlayer() {
           ref={audioRef}
           src={currentSong.file}
           preload="auto"
-          crossOrigin="anonymous"
-          playsInline
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onCanPlay={handleCanPlay}
@@ -601,12 +609,14 @@ export default function MusicPlayer() {
       </div>
 
       {/* Emotion Visual Effects Overlay with real-time audio feature reactivity */}
-      <EmotionOverlay
-        songName={currentSong.name}
-        songArtist={currentSong.artist}
-        isPlaying={isPlaying}
-        getLiveFeatures={engine.getLiveFeatures}
-      />
+      {visualsEnabled && (
+        <EmotionOverlay
+          songName={currentSong.name}
+          songArtist={currentSong.artist}
+          isPlaying={isPlaying}
+          getLiveFeatures={engine.getLiveFeatures}
+        />
+      )}
 
       {/* Fullscreen Cinema Immersion Mode (Press F) */}
       <CinemaMode
