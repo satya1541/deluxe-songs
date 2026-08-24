@@ -7,6 +7,7 @@ import { useAudioEngine, AI_ACOUSTIC_PROFILES, AIAcousticProfile } from '@/hooks
 import AudioEnhancer from '@/components/AudioEnhancer';
 import EmotionOverlay, { getInstantEmotion } from '@/components/EmotionOverlay';
 import VolumeHUD from '@/components/VolumeHUD';
+import CinemaMode from '@/components/CinemaMode';
 
 const PLAYED_HISTORY_KEY = 'deluxe_played_history_v1';
 
@@ -112,6 +113,7 @@ export default function MusicPlayer() {
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [enhancerOpen, setEnhancerOpen] = useState<boolean>(false);
+  const [cinemaOpen, setCinemaOpen] = useState<boolean>(false);
 
   // Audio engine
   const engine = useAudioEngine(audioRef);
@@ -196,7 +198,7 @@ export default function MusicPlayer() {
   const activeProfile: AIAcousticProfile | null =
     activeEmotion?.emotion && AI_ACOUSTIC_PROFILES[activeEmotion.emotion]
       ? AI_ACOUSTIC_PROFILES[activeEmotion.emotion]
-      : AI_ACOUSTIC_PROFILES.soft_romantic;
+      : AI_ACOUSTIC_PROFILES.content_romantic || Object.values(AI_ACOUSTIC_PROFILES)[0];
 
   // Auto-sculpt acoustics when AI Smart EQ is active and song plays
   useEffect(() => {
@@ -386,17 +388,32 @@ export default function MusicPlayer() {
       } else if (e.code === 'ArrowDown' || e.key === 'ArrowDown') {
         e.preventDefault();
         adjustVolume(-5);
+      } else if (e.code === 'KeyF' || e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        setCinemaOpen((prev) => !prev);
       }
     };
 
+    const handleCustomCinemaToggle = () => {
+      setCinemaOpen((prev) => !prev);
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('toggle-cinema-mode', handleCustomCinemaToggle);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('toggle-cinema-mode', handleCustomCinemaToggle);
+    };
   }, [togglePlay, adjustVolume]);
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   const toggleEnhancer = useCallback(() => {
     setEnhancerOpen((prev) => !prev);
+  }, []);
+
+  const toggleCinema = useCallback(() => {
+    setCinemaOpen((prev) => !prev);
   }, []);
 
   if (!currentSong) {
@@ -581,11 +598,36 @@ export default function MusicPlayer() {
         </div>
       </div>
 
-      {/* Emotion Visual Effects Overlay */}
+      {/* Emotion Visual Effects Overlay with real-time audio feature reactivity */}
       <EmotionOverlay
         songName={currentSong.name}
         songArtist={currentSong.artist}
         isPlaying={isPlaying}
+        getLiveFeatures={engine.getLiveFeatures}
+      />
+
+      {/* Fullscreen Cinema Immersion Mode (Press F) */}
+      <CinemaMode
+        isActive={cinemaOpen}
+        onClose={() => setCinemaOpen(false)}
+        currentSong={currentSong}
+        isPlaying={isPlaying}
+        onTogglePlay={togglePlay}
+        onNext={nextSong}
+        onPrev={prevSong}
+        currentTime={currentTime}
+        duration={duration}
+        onSeek={(t) => {
+          if (audioRef.current) {
+            audioRef.current.currentTime = t;
+            setCurrentTime(t);
+          }
+        }}
+        emotion={activeEmotion?.emotion || 'soft_romantic'}
+        engine={engine}
+        aiSmartEq={aiSmartEq}
+        onToggleAiSmartEq={toggleAiSmartEq}
+        onOpenEnhancer={() => setEnhancerOpen(true)}
       />
 
       {/* Audio Enhancer Panel with AI Smart Acoustics */}

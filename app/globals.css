@@ -130,7 +130,54 @@ button {
 .top-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+}
+
+/* Fullscreen Cinema Immersion Button in Top Right */
+.topbar-cinema-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.topbar-cinema-btn:hover {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(168, 85, 247, 0.25));
+  border-color: rgba(249, 115, 22, 0.6);
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.35), 0 0 12px rgba(168, 85, 247, 0.2);
+  transform: translateY(-1px);
+}
+
+.topbar-cinema-btn svg {
+  stroke: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.topbar-cinema-btn:hover svg {
+  transform: scale(1.1);
+}
+
+.topbar-kbd {
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fed7aa;
+  margin-left: 2px;
 }
 
 .music-link {
@@ -1064,28 +1111,71 @@ button {
   transition: background 1s ease;
 }
 
-.emotion-sad_romantic .emotion-gradient {
-  background: radial-gradient(ellipse at 50% 25%, rgba(20, 35, 75, 0.45) 0%, rgba(10, 18, 40, 0.3) 50%, transparent 100%);
+/* Atmospheric CSS Ambient Gradients per Romantic Mood */
+.emotion-heartbroken .emotion-gradient,
+.emotion-heartbroken_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 30%, rgba(10, 25, 45, 0.65) 0%, rgba(5, 10, 20, 0.45) 50%, transparent 100%);
+}
+
+.emotion-yearning_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 35%, rgba(160, 95, 15, 0.45) 0%, rgba(55, 25, 80, 0.3) 50%, transparent 100%);
 }
 
 .emotion-dark_romantic .emotion-gradient {
-  background: radial-gradient(ellipse at 50% 80%, rgba(140, 10, 25, 0.5) 0%, rgba(70, 0, 15, 0.3) 50%, transparent 100%);
+  background: radial-gradient(ellipse at 50% 70%, rgba(140, 8, 25, 0.65) 0%, rgba(45, 0, 12, 0.4) 50%, transparent 100%);
+}
+
+.emotion-sensual_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 75%, rgba(190, 15, 35, 0.6) 0%, rgba(95, 2, 18, 0.35) 50%, transparent 100%);
 }
 
 .emotion-soft_romantic .emotion-gradient {
-  background: radial-gradient(ellipse at 50% 70%, rgba(175, 25, 75, 0.35) 0%, rgba(90, 10, 35, 0.2) 50%, transparent 100%);
+  background: radial-gradient(ellipse at 50% 45%, rgba(236, 64, 122, 0.4) 0%, rgba(136, 14, 79, 0.2) 50%, transparent 100%);
+}
+
+.emotion-intimate_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 65%, rgba(173, 20, 87, 0.5) 0%, rgba(74, 5, 35, 0.3) 50%, transparent 100%);
 }
 
 .emotion-happy_romantic .emotion-gradient {
-  background: radial-gradient(ellipse at 50% 30%, rgba(245, 170, 25, 0.3) 0%, rgba(255, 110, 0, 0.15) 50%, transparent 100%);
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 179, 0, 0.45) 0%, rgba(230, 81, 0, 0.2) 50%, transparent 100%);
+}
+
+.emotion-hopeful_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 20%, rgba(2, 136, 209, 0.45) 0%, rgba(1, 87, 155, 0.25) 50%, transparent 100%);
+}
+
+.emotion-nostalgic_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 50%, rgba(109, 76, 65, 0.5) 0%, rgba(62, 39, 35, 0.3) 50%, transparent 100%);
 }
 
 .emotion-devotional_romantic .emotion-gradient {
-  background: radial-gradient(ellipse at 50% 40%, rgba(230, 90, 0, 0.35) 0%, rgba(180, 50, 0, 0.18) 50%, transparent 100%);
+  background: radial-gradient(ellipse at 50% 25%, rgba(230, 81, 0, 0.5) 0%, rgba(120, 40, 0, 0.25) 50%, transparent 100%);
 }
 
 .emotion-dreamy_romantic .emotion-gradient {
-  background: radial-gradient(ellipse at 50% 30%, rgba(25, 15, 65, 0.4) 0%, rgba(10, 45, 40, 0.25) 60%, transparent 100%);
+  background: radial-gradient(ellipse at 50% 35%, rgba(26, 35, 126, 0.6) 0%, rgba(0, 150, 136, 0.25) 50%, transparent 100%);
+}
+
+.emotion-sad_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 25%, rgba(15, 30, 65, 0.65) 0%, rgba(5, 12, 30, 0.4) 50%, transparent 100%);
+}
+
+/* Backward compatibility aliases */
+.emotion-content_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 45%, rgba(236, 64, 122, 0.4) 0%, rgba(136, 14, 79, 0.2) 50%, transparent 100%);
+}
+
+.emotion-adoring_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 179, 0, 0.45) 0%, rgba(230, 81, 0, 0.2) 50%, transparent 100%);
+}
+
+.emotion-bittersweet_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 50%, rgba(109, 76, 65, 0.5) 0%, rgba(62, 39, 35, 0.3) 50%, transparent 100%);
+}
+
+.emotion-lonely_romantic .emotion-gradient {
+  background: radial-gradient(ellipse at 50% 25%, rgba(15, 30, 65, 0.65) 0%, rgba(5, 12, 30, 0.4) 50%, transparent 100%);
 }
 
 /* ===== Emotion Badge & Interactive Theme Picker ===== */
@@ -2603,6 +2693,46 @@ button {
   color: #fed7aa;
 }
 
+.ai-intent-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 4px 0;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ai-intent-gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ai-intent-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.ai-intent-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.ai-intent-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #f97316, #a855f7);
+  transition: width 0.35s ease;
+}
+
 .ai-profile-chips {
   display: flex;
   gap: 6px;
@@ -2617,6 +2747,12 @@ button {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.85);
+}
+
+.ai-chip.ai-chip-section {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(168, 85, 247, 0.2));
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #fed7aa;
 }
 
 .section-label-row {
@@ -2811,6 +2947,927 @@ button {
   color: rgba(255, 255, 255, 0.65);
   white-space: nowrap;
 }
+
+/* ===================================================================
+   📺 FULLSCREEN CINEMA IMMERSION MODE (PRESS F)
+   =================================================================== */
+
+.cinema-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: radial-gradient(circle at 50% 50%, rgba(12, 8, 16, 0.88) 0%, rgba(4, 2, 8, 0.96) 100%);
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #ffffff;
+  font-family: inherit;
+  overflow: hidden;
+  animation: cinema-fade-in 0.4s ease forwards;
+}
+
+@keyframes cinema-fade-in {
+  from { opacity: 0; transform: scale(1.02); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cinema-overlay.controls-hidden {
+  cursor: none;
+}
+
+.cinema-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 36px;
+  z-index: 20;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.cinema-top-bar.bar-hidden {
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+}
+
+.cinema-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cinema-sparkle {
+  font-size: 20px;
+  animation: sparkle-spin 3s ease-in-out infinite alternate;
+}
+
+.cinema-brand-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.cinema-brand-artist {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fed7aa;
+  margin-left: 6px;
+  opacity: 0.85;
+}
+
+.cinema-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cinema-top-btn,
+.cinema-exit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s ease;
+}
+
+.cinema-top-btn:hover,
+.cinema-exit-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* Center Cinema Stage */
+.cinema-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40px;
+  gap: 60px;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  z-index: 10;
+}
+
+.cinema-stage.stage-centered {
+  justify-content: center;
+}
+
+.cinema-vinyl-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.cinema-vinyl-glow {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  filter: blur(65px);
+  opacity: 0.65;
+  pointer-events: none;
+  z-index: 1;
+  transition: background 1.5s ease;
+}
+
+.aura-emotion-heartbroken_romantic { background: radial-gradient(circle, #00e5ff 0%, #7c4dff 60%, transparent 80%); }
+.aura-emotion-sad_romantic { background: radial-gradient(circle, #42a5f5 0%, #1565c0 60%, transparent 80%); }
+.aura-emotion-devotional_romantic { background: radial-gradient(circle, #ffb300 0%, #e65100 60%, transparent 80%); }
+.aura-emotion-sensual_romantic { background: radial-gradient(circle, #ff1744 0%, #b71c1c 60%, transparent 80%); }
+.aura-emotion-dark_romantic { background: radial-gradient(circle, #d50000 0%, #4a148c 60%, transparent 80%); }
+.aura-emotion-soft_romantic { background: radial-gradient(circle, #f48fb1 0%, #ad1457 60%, transparent 80%); }
+.aura-emotion-dreamy_romantic { background: radial-gradient(circle, #80deea 0%, #311b92 60%, transparent 80%); }
+.aura-emotion-happy_romantic { background: radial-gradient(circle, #fff176 0%, #f57f17 60%, transparent 80%); }
+.aura-emotion-yearning_romantic { background: radial-gradient(circle, #ffca28 0%, #e65100 60%, transparent 80%); }
+.aura-emotion-hopeful_romantic { background: radial-gradient(circle, #81d4fa 0%, #0288d1 60%, transparent 80%); }
+.aura-emotion-nostalgic_romantic { background: radial-gradient(circle, #ffca28 0%, #4e342e 60%, transparent 80%); }
+
+/* Cinema Album Art Wrapper - Full circular spinning disc identical to outside */
+.cinema-album-wrapper {
+  position: relative;
+  width: 290px;
+  height: 290px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.cinema-album-art {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 25px 70px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.cinema-album-art.playing {
+  animation: spin 8s linear infinite;
+}
+
+.cinema-album-art:not(.playing) {
+  animation: spin 8s linear infinite;
+  animation-play-state: paused;
+}
+
+.cinema-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cinema-vinyl-hole {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #111111;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.9);
+  z-index: 5;
+}
+
+.cinema-song-meta {
+  margin-top: 24px;
+  text-align: center;
+  z-index: 2;
+}
+
+.cinema-song-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.8);
+}
+
+.cinema-artist-name {
+  font-size: 14.5px;
+  color: #fed7aa;
+  margin: 6px 0 0 0;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* Floating Bottom Control Deck */
+.cinema-control-deck {
+  padding: 0 36px 36px 36px;
+  z-index: 20;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+.cinema-control-deck.deck-hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.cinema-deck-glass {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px 28px;
+  border-radius: 28px;
+  background: rgba(18, 12, 22, 0.8);
+  backdrop-filter: blur(35px) saturate(2);
+  -webkit-backdrop-filter: blur(35px) saturate(2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(249, 115, 22, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cinema-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cinema-time-current,
+.cinema-time-duration {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  min-width: 36px;
+}
+
+/* Smooth Interactive Scrubber Progress Bar */
+.cinema-progress-bar {
+  position: relative;
+  flex: 1;
+  padding: 14px 0;
+  margin: -14px 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+  user-select: none;
+}
+
+.cinema-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+  transition: height 0.15s ease, background 0.15s ease;
+}
+
+.cinema-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #f97316, #a855f7);
+  pointer-events: none;
+}
+
+.cinema-progress-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 12px rgba(249, 115, 22, 0.9),
+    0 2px 6px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.cinema-progress-bar:hover .cinema-progress-thumb,
+.cinema-progress-bar:active .cinema-progress-thumb {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.cinema-progress-bar:hover .cinema-progress-track,
+.cinema-progress-bar:active .cinema-progress-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.cinema-buttons-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cinema-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cinema-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cinema-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.cinema-tool-btn.cinema-ai-active {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(168, 85, 247, 0.3));
+  border-color: rgba(249, 115, 22, 0.6);
+  color: #fed7aa;
+}
+
+.cinema-main-transport {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cinema-transport-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.cinema-transport-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.cinema-play-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  border: none;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.45);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cinema-play-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 25px rgba(249, 115, 22, 0.6);
+}
+
+.cinema-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cinema-volume-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cinema-volume-slider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+.cinema-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Control buttons glyphs */
+.control-btn.cinema-btn .btn-glyph {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.control-btn.cinema-btn.cinema-btn-active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN SYSTEM: TABLET & MOBILE VIEWPORTS
+   ========================================================================== */
+
+/* --- TABLET & IPAD (<= 1024px) --- */
+@media (max-width: 1024px) {
+  .top-bar {
+    padding: 16px 24px;
+  }
+
+  .music-player {
+    bottom: max(20px, env(safe-area-inset-bottom, 20px));
+    max-width: 540px;
+    padding: 0 20px;
+  }
+
+  .center-content {
+    padding-bottom: 25vh;
+  }
+
+  .title-text {
+    font-size: clamp(60px, 9vw, 120px);
+  }
+
+  .cinema-album-wrapper {
+    width: 250px;
+    height: 250px;
+  }
+
+  .cinema-vinyl-glow {
+    width: 340px;
+    height: 340px;
+  }
+
+  .enhancer-panel {
+    max-width: 620px;
+  }
+}
+
+/* --- SMALL TABLETS & LARGE PHONES (<= 768px) --- */
+@media (max-width: 768px) {
+  .top-bar {
+    padding: max(12px, env(safe-area-inset-top, 12px)) 16px 0 16px;
+  }
+
+  .top-right {
+    gap: 10px;
+  }
+
+  .music-link-text,
+  .external-icon,
+  .topbar-kbd,
+  .cinema-exit-kbd {
+    display: none;
+  }
+
+  .music-link {
+    padding: 7px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .topbar-cinema-btn {
+    padding: 6px 12px;
+    font-size: 11.5px;
+    gap: 5px;
+  }
+
+  .center-content {
+    padding-bottom: 22vh;
+  }
+
+  .title-text {
+    font-size: clamp(50px, 12vw, 90px);
+  }
+
+  .music-player {
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    padding: 0 14px;
+    max-width: 100%;
+  }
+
+  .player-inner {
+    padding: 10px 16px 10px 10px;
+    gap: 12px;
+    border-radius: 9999px;
+  }
+
+  .album-art-wrapper {
+    width: 64px;
+    height: 64px;
+  }
+
+  .song-name {
+    font-size: 14px;
+  }
+
+  .artist-name {
+    font-size: 12px;
+  }
+
+  .player-controls {
+    gap: 6px;
+  }
+
+  .control-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .play-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Cinema Mode Tablet Responsive */
+  .cinema-top-bar {
+    padding: max(12px, env(safe-area-inset-top, 12px)) 20px 0 20px;
+  }
+
+  .cinema-brand-title {
+    font-size: 14px;
+  }
+
+  .cinema-brand-artist {
+    font-size: 12px;
+  }
+
+  .cinema-album-wrapper {
+    width: 220px;
+    height: 220px;
+  }
+
+  .cinema-vinyl-glow {
+    width: 300px;
+    height: 300px;
+  }
+
+  .cinema-song-title {
+    font-size: 20px;
+  }
+
+  .cinema-artist-name {
+    font-size: 13.5px;
+  }
+
+  .cinema-control-deck {
+    padding: 0 20px max(20px, env(safe-area-inset-bottom, 20px)) 20px;
+  }
+
+  .cinema-deck-glass {
+    padding: 14px 20px;
+    border-radius: 24px;
+  }
+
+  .cinema-volume-wrap {
+    display: none; /* Mobile phones use hardware volume keys */
+  }
+
+  .enhancer-panel {
+    width: 100%;
+    max-height: 85vh;
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+/* --- MOBILE PHONES PORTRAIT (<= 480px) --- */
+@media (max-width: 480px) {
+  .top-bar {
+    padding: max(10px, env(safe-area-inset-top, 10px)) 12px 0 12px;
+  }
+
+  .top-center {
+    position: static;
+    transform: none;
+  }
+
+  .time {
+    font-size: 12px;
+  }
+
+  .online-count {
+    font-size: 12px;
+  }
+
+  .online-label {
+    font-size: 11px;
+  }
+
+  .top-right {
+    gap: 6px;
+  }
+
+  .topbar-cinema-btn {
+    padding: 5px 9px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .topbar-cinema-label {
+    font-size: 11px;
+  }
+
+  .center-content {
+    padding-bottom: 20vh;
+  }
+
+  .title-text {
+    font-size: clamp(42px, 13vw, 75px);
+  }
+
+  .music-player {
+    bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    padding: 0 8px;
+  }
+
+  .player-inner {
+    padding: 8px 12px 8px 8px;
+    gap: 10px;
+    border-radius: 24px;
+  }
+
+  .album-art-wrapper {
+    width: 52px;
+    height: 52px;
+  }
+
+  .song-name {
+    font-size: 13px;
+    max-width: 130px;
+  }
+
+  .artist-name {
+    font-size: 11px;
+    max-width: 130px;
+  }
+
+  .progress-bar-container {
+    margin-top: 4px;
+  }
+
+  .time-display {
+    font-size: 9.5px;
+  }
+
+  .player-controls {
+    gap: 4px;
+  }
+
+  .control-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .play-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .play-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .ai-acoustics-btn .ai-btn-label {
+    font-size: 10px;
+  }
+
+  /* Cinema Mode Mobile Portrait */
+  .cinema-top-bar {
+    padding: max(10px, env(safe-area-inset-top, 10px)) 14px 0 14px;
+  }
+
+  .cinema-brand-title {
+    font-size: 13px;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cinema-brand-artist {
+    display: none; /* Prevent top line wrap on narrow screens */
+  }
+
+  .cinema-exit-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    gap: 4px;
+  }
+
+  .cinema-stage {
+    padding: 0 16px;
+  }
+
+  .cinema-album-wrapper {
+    width: 190px;
+    height: 190px;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.85);
+  }
+
+  .cinema-vinyl-glow {
+    width: 240px;
+    height: 240px;
+    filter: blur(50px);
+  }
+
+  .cinema-song-meta {
+    margin-top: 16px;
+  }
+
+  .cinema-song-title {
+    font-size: 18px;
+  }
+
+  .cinema-artist-name {
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .cinema-control-deck {
+    padding: 0 12px max(14px, env(safe-area-inset-bottom, 14px)) 12px;
+  }
+
+  .cinema-deck-glass {
+    padding: 10px 16px;
+    border-radius: 20px;
+    gap: 8px;
+  }
+
+  .cinema-progress-row {
+    gap: 8px;
+  }
+
+  .cinema-time-current,
+  .cinema-time-duration {
+    font-size: 10.5px;
+    min-width: 28px;
+  }
+
+  .ai-btn-text {
+    display: none; /* Keep sparkle icon for compact elegance */
+  }
+
+  .cinema-tool-btn {
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+
+  .cinema-main-transport {
+    gap: 12px;
+  }
+
+  .cinema-transport-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .cinema-play-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .cinema-play-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* --- MOBILE LANDSCAPE VIEWPORT (Height <= 550px) --- */
+@media (max-height: 550px) and (orientation: landscape) {
+  .top-bar {
+    padding: 8px 20px 0 20px;
+  }
+
+  .center-content {
+    padding-bottom: 18vh;
+  }
+
+  .title-text {
+    font-size: clamp(32px, 7vw, 55px);
+  }
+
+  .music-player {
+    bottom: 8px;
+    max-width: 480px;
+  }
+
+  .player-inner {
+    padding: 6px 12px 6px 6px;
+    gap: 10px;
+  }
+
+  .album-art-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Cinema Mode Landscape Layout: Side-by-Side */
+  .cinema-top-bar {
+    padding: 8px 24px 0 24px;
+  }
+
+  .cinema-stage {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    padding: 0 24px;
+  }
+
+  .cinema-vinyl-wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .cinema-album-wrapper {
+    width: 140px;
+    height: 140px;
+  }
+
+  .cinema-vinyl-glow {
+    width: 180px;
+    height: 180px;
+    filter: blur(40px);
+  }
+
+  .cinema-song-meta {
+    margin-top: 0;
+    text-align: left;
+  }
+
+  .cinema-song-title {
+    font-size: 16px;
+  }
+
+  .cinema-artist-name {
+    font-size: 12px;
+  }
+
+  .cinema-control-deck {
+    padding: 0 24px 8px 24px;
+  }
+
+  .cinema-deck-glass {
+    padding: 8px 18px;
+    gap: 6px;
+    border-radius: 18px;
+  }
+
+  .cinema-volume-wrap {
+    display: none;
+  }
+
+  .cinema-play-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .cinema-transport-btn {
+    width: 30px;
+    height: 30px;
+  }
+}
+
 
 
 

@@ -1,12 +1,33 @@
 import { NextResponse } from 'next/server';
 
 export type EmotionType =
-  | 'sad_romantic'         // 🌧️ Rainy & Melancholic (Tympanus style rain on glass)
-  | 'dark_romantic'        // 🥀 Dark Crimson & Passionate (Embers & Dark Red Mist)
-  | 'soft_romantic'        // 🌸 Soft & Sweet Love (3D Floating Rose Petals)
-  | 'happy_romantic'       // ✨ Joyful & Peppy Love (Golden Sunburst & Sparkles)
-  | 'devotional_romantic'  // 🙏 Sufi & Divine Sacred Love (Divine Rays & Floating Diyas)
-  | 'dreamy_romantic';     // 🌙 Dreamy & Serene Lofi (Twinkling Cosmos & Aurora)
+  | 'sad_romantic'           // 🌧️ General melancholy, sadness, separation & sorrowful love
+  | 'heartbroken_romantic'     // 💔 Devastating breakup, love lost & emotional damage
+  | 'yearning_romantic'        // 🫶 Strong longing, viraha, missing someone & distance
+  | 'dark_romantic'            // 🥀 Obsessive, haunting, dramatic & psychologically dark passion
+  | 'sensual_romantic'         // 🔥 Physical attraction, chemistry, seduction & tension
+  | 'soft_romantic'            // 🌸 Gentle, innocent, tender & comforting sweet love
+  | 'intimate_romantic'        // ❤️ Deep emotional closeness, vulnerability & quiet whispers
+  | 'happy_romantic'           // ✨ Joyful, playful, flirtatious & celebratory love
+  | 'hopeful_romantic'         // 🕊️ Optimistic love, reunion, faith & belief
+  | 'nostalgic_romantic'       // 😢 Memories of past love, 90s vintage & reminiscence
+  | 'devotional_romantic'      // 🙏 Sufi, divine, sacred, ishq-e-haqiqi & spiritual prayer
+  | 'dreamy_romantic'          // 🌙 Ethereal, atmospheric, aurora & floating dreamscape
+  // Backward compatibility aliases
+  | 'heartbroken'
+  | 'content_romantic'
+  | 'adoring_romantic'
+  | 'bittersweet_romantic'
+  | 'lonely_romantic';
+
+export interface AcousticIntent {
+  warmth: number;        // 0.0 - 1.0 (Low-mid chest body & fullness at 230Hz)
+  space: number;         // 0.0 - 1.0 (Reverb depth, decay & spatial staging)
+  intensity: number;     // 0.0 - 1.0 (Dynamic punch & compression drive)
+  brightness: number;    // 0.0 - 1.0 (Airy highs & presence at 14kHz)
+  vocalPresence: number; // 0.0 - 1.0 (Forward vocal clarity & intimacy at 4kHz)
+  subBassDepth: number;  // 0.0 - 1.0 (Low-end cinematic weight at 60Hz)
+}
 
 export interface EmotionResult {
   emotion: EmotionType;
@@ -15,54 +36,271 @@ export interface EmotionResult {
   label: string;
   icon: string;
   themeDescription: string;
+  intent: AcousticIntent;
 }
 
-const EMOTION_MAP: Record<EmotionType, Omit<EmotionResult, 'emotion'>> = {
+const DEFAULT_INTENTS: Record<string, AcousticIntent> = {
   sad_romantic: {
-    color: '#1a237e',
-    secondary: '#42a5f5',
-    label: 'Sad & Melancholic',
-    icon: '🌧️',
-    themeDescription: 'Rain on glass with misty condensation & stormy clouds',
+    warmth: 0.75,
+    space: 0.80,
+    intensity: 0.35,
+    brightness: 0.30,
+    vocalPresence: 0.85,
+    subBassDepth: 0.70,
+  },
+  heartbroken_romantic: {
+    warmth: 0.60,
+    space: 0.85,
+    intensity: 0.55,
+    brightness: 0.45,
+    vocalPresence: 0.90,
+    subBassDepth: 0.85,
+  },
+  heartbroken: {
+    warmth: 0.60,
+    space: 0.85,
+    intensity: 0.55,
+    brightness: 0.45,
+    vocalPresence: 0.90,
+    subBassDepth: 0.85,
+  },
+  yearning_romantic: {
+    warmth: 0.70,
+    space: 0.80,
+    intensity: 0.40,
+    brightness: 0.50,
+    vocalPresence: 0.95,
+    subBassDepth: 0.55,
   },
   dark_romantic: {
-    color: '#8b0000',
-    secondary: '#ff1744',
-    label: 'Dark & Passionate',
-    icon: '🥀',
-    themeDescription: 'Cloudy dark red mist with burning ember sparks & dark passion',
+    warmth: 0.80,
+    space: 0.60,
+    intensity: 0.80,
+    brightness: 0.40,
+    vocalPresence: 0.75,
+    subBassDepth: 0.95,
+  },
+  sensual_romantic: {
+    warmth: 0.90,
+    space: 0.55,
+    intensity: 0.75,
+    brightness: 0.50,
+    vocalPresence: 0.85,
+    subBassDepth: 0.90,
   },
   soft_romantic: {
-    color: '#ad1457',
-    secondary: '#f48fb1',
-    label: 'Soft & Sweet Romance',
-    icon: '🌸',
-    themeDescription: 'Floating 3D rose petals with warm acoustic heartbeat glow',
+    warmth: 0.65,
+    space: 0.45,
+    intensity: 0.25,
+    brightness: 0.60,
+    vocalPresence: 0.70,
+    subBassDepth: 0.35,
+  },
+  content_romantic: {
+    warmth: 0.65,
+    space: 0.45,
+    intensity: 0.25,
+    brightness: 0.60,
+    vocalPresence: 0.70,
+    subBassDepth: 0.35,
+  },
+  intimate_romantic: {
+    warmth: 0.85,
+    space: 0.50,
+    intensity: 0.30,
+    brightness: 0.40,
+    vocalPresence: 0.95,
+    subBassDepth: 0.50,
   },
   happy_romantic: {
-    color: '#f9a825',
-    secondary: '#ff6f00',
-    label: 'Joyful & Peppy Love',
-    icon: '✨',
-    themeDescription: 'Golden sunburst rays with celebratory shimmer & glitter',
+    warmth: 0.50,
+    space: 0.40,
+    intensity: 0.70,
+    brightness: 0.85,
+    vocalPresence: 0.75,
+    subBassDepth: 0.75,
+  },
+  adoring_romantic: {
+    warmth: 0.50,
+    space: 0.40,
+    intensity: 0.70,
+    brightness: 0.85,
+    vocalPresence: 0.75,
+    subBassDepth: 0.75,
+  },
+  hopeful_romantic: {
+    warmth: 0.60,
+    space: 0.70,
+    intensity: 0.50,
+    brightness: 0.75,
+    vocalPresence: 0.80,
+    subBassDepth: 0.50,
+  },
+  nostalgic_romantic: {
+    warmth: 0.85,
+    space: 0.65,
+    intensity: 0.45,
+    brightness: 0.35,
+    vocalPresence: 0.80,
+    subBassDepth: 0.60,
+  },
+  bittersweet_romantic: {
+    warmth: 0.85,
+    space: 0.65,
+    intensity: 0.45,
+    brightness: 0.35,
+    vocalPresence: 0.80,
+    subBassDepth: 0.60,
   },
   devotional_romantic: {
-    color: '#e65100',
-    secondary: '#ffab00',
-    label: 'Sufi & Divine Love',
-    icon: '🙏',
-    themeDescription: 'Rotating sacred golden light rays & floating diya lanterns',
+    warmth: 0.75,
+    space: 0.90,
+    intensity: 0.60,
+    brightness: 0.65,
+    vocalPresence: 0.90,
+    subBassDepth: 0.70,
   },
   dreamy_romantic: {
-    color: '#1b5e20',
-    secondary: '#7c4dff',
-    label: 'Dreamy & Serene Night',
-    icon: '🌙',
-    themeDescription: 'Cosmic starry sky with twinkling stars & shifting aurora borealis',
+    warmth: 0.70,
+    space: 0.85,
+    intensity: 0.30,
+    brightness: 0.70,
+    vocalPresence: 0.65,
+    subBassDepth: 0.65,
+  },
+  lonely_romantic: {
+    warmth: 0.75,
+    space: 0.80,
+    intensity: 0.35,
+    brightness: 0.30,
+    vocalPresence: 0.85,
+    subBassDepth: 0.70,
   },
 };
 
-// In-memory cache so we don't re-call Gemini repeatedly for identical songs
+const EMOTION_MAP: Record<string, Omit<EmotionResult, 'emotion' | 'intent'>> = {
+  sad_romantic: {
+    color: '#050c1a',
+    secondary: '#64b5f6',
+    label: 'Sad & Melancholic',
+    icon: '🌧️',
+    themeDescription: 'Rain on glass window with fluid droplet sliding physics and misty condensation',
+  },
+  heartbroken_romantic: {
+    color: '#0d1117',
+    secondary: '#00e5ff',
+    label: 'Heartbroken & Devastated',
+    icon: '💔',
+    themeDescription: 'Shattered crystal shards in a dark stormy void with lightning cracks',
+  },
+  heartbroken: {
+    color: '#0d1117',
+    secondary: '#00e5ff',
+    label: 'Heartbroken & Devastated',
+    icon: '💔',
+    themeDescription: 'Shattered crystal shards in a dark stormy void with lightning cracks',
+  },
+  yearning_romantic: {
+    color: '#ffb300',
+    secondary: '#303f9f',
+    label: 'Deep Yearning (Viraha)',
+    icon: '🫶',
+    themeDescription: 'Swirling horizon mist with glowing floating paper lanterns drifting away',
+  },
+  dark_romantic: {
+    color: '#880e4f',
+    secondary: '#ff1744',
+    label: 'Dark & Obsessive Passion',
+    icon: '🥀',
+    themeDescription: 'Cloudy dark crimson mist with rising ember sparks and haunting intensity',
+  },
+  sensual_romantic: {
+    color: '#b71c1c',
+    secondary: '#ff3d00',
+    label: 'Sensual Passion & Fire',
+    icon: '🔥',
+    themeDescription: 'Rolling velvet crimson mist with rising ember sparks and burning intensity',
+  },
+  soft_romantic: {
+    color: '#ec407a',
+    secondary: '#f48fb1',
+    label: 'Soft & Gentle Love',
+    icon: '🌸',
+    themeDescription: '3D floating rose petals with gentle warmth and acoustic serenity',
+  },
+  content_romantic: {
+    color: '#ff7043',
+    secondary: '#ffe082',
+    label: 'Peaceful Bliss (Sukoon)',
+    icon: '😌',
+    themeDescription: 'Golden hour sunset warmth with drifting dandelion fluff in lazy breezes',
+  },
+  intimate_romantic: {
+    color: '#ad1457',
+    secondary: '#f06292',
+    label: 'Intimate & Tender Love',
+    icon: '❤️',
+    themeDescription: 'Warm candlelight ambiance with acoustic heartbeat pulse and gentle halos',
+  },
+  happy_romantic: {
+    color: '#f57f17',
+    secondary: '#fff176',
+    label: 'Joyful & Playful Love',
+    icon: '✨',
+    themeDescription: 'Radiant golden sunburst rays with celebratory star sparkles and glitter bursts',
+  },
+  adoring_romantic: {
+    color: '#ec407a',
+    secondary: '#fff59d',
+    label: 'Adoring & Sweet Love',
+    icon: '🥰',
+    themeDescription: '3D floating rose petals with playful celebratory glitter and sparkle bursts',
+  },
+  hopeful_romantic: {
+    color: '#0288d1',
+    secondary: '#81d4fa',
+    label: 'Hopeful & Uplifting',
+    icon: '🕊️',
+    themeDescription: 'Rising celestial morning sunbeams with floating white feathers and light orbs',
+  },
+  nostalgic_romantic: {
+    color: '#6d4c41',
+    secondary: '#ffca28',
+    label: 'Nostalgic 90s Memories',
+    icon: '😢',
+    themeDescription: 'Vintage 35mm film grain, sepia scratches, and wandering glowing fireflies',
+  },
+  devotional_romantic: {
+    color: '#e65100',
+    secondary: '#ffb74d',
+    label: 'Sufi & Sacred Love',
+    icon: '🙏',
+    themeDescription: 'Rotating celestial golden rays, sacred glowing halos & floating diya lanterns',
+  },
+  dreamy_romantic: {
+    color: '#1a237e',
+    secondary: '#80deea',
+    label: 'Dreamy Aurora & Stars',
+    icon: '🌙',
+    themeDescription: 'Northern lights aurora borealis, twinkling cosmic constellations & stardust',
+  },
+  bittersweet_romantic: {
+    color: '#4a148c',
+    secondary: '#ff6f00',
+    label: 'Bittersweet Memories',
+    icon: '🌅',
+    themeDescription: 'Dual-tone twilight sky with falling amber autumn leaves and tender mist',
+  },
+  lonely_romantic: {
+    color: '#050c1a',
+    secondary: '#64b5f6',
+    label: 'Lonely Rain on Glass',
+    icon: '🌧️',
+    themeDescription: 'Rain on glass window with fluid droplet sliding physics and condensation',
+  },
+};
+
+// In-memory cache to prevent redundant Gemini API calls
 const emotionCache = new Map<string, EmotionResult>();
 
 export async function POST(request: Request) {
@@ -89,22 +327,43 @@ export async function POST(request: Request) {
       return NextResponse.json(fallback);
     }
 
-    const prompt = `You are an expert music emotion classifier specializing in Bollywood and Indian romantic songs.
-Most Indian songs are love/romantic songs, but each has a distinct emotional subtype.
+    // Adaptive 3-Tier Neuro-Acoustic Classifier Prompt with normalized intent vectors [0.0 - 1.0]
+    const prompt = `You are an expert Indian musicologist and audio mastering engineer specializing in Bollywood, Hindi, Punjabi, Bengali, Odia, Sambalpuri, Sufi, and Indian romantic tracks.
 
-Analyze this track:
-Song Title: "${songName}"
-Artist/Album: "${songArtist || 'Unknown'}"
+Analyze the following song using ONLY the available metadata:
+- Song title: "${songName}"
+- Artist(s): "${songArtist || 'Unknown'}"
+- Your learned knowledge about the song's musical, vocal, and emotional production identity.
 
-Classify its specific romantic/emotional subtype into EXACTLY ONE of these 6 categories:
-1. sad_romantic - Heartbreak, sadness, crying, rain, longing, separation, grief, dard, alvida, emotional pain (e.g. "Ae Dil Hai Mushkil", "Tum Hi Ho", "Galliyan Returns", "Sawan Aaya Hai", "Wajah Tum Ho", "Tera Mera Rishta", "Tere Bina", "Tumse Bhi Zyada")
-2. dark_romantic - Passionate, obsessive, dramatic, dark crimson, haunting, seductive, intense love, deewaniyat (e.g. "Deewana Kar Raha Hai", "Deewaniyat", "Mera Hua", "Tum Mere Ho", "Terre Pyaar Mein", "Tu Jo Hain", "Tum Ho Mera Pyar")
-3. soft_romantic - Sweet, tender, gentle acoustic love, innocent affection, soft melody, soulful warmth (e.g. "Dil Diyan Gallan", "Sajni", "Bol Do Na Zara", "Itni Si Baat Hain", "Maheroo Maheroo", "Dil Mein Ho Tum", "Ijazat", "Naina Re")
-4. happy_romantic - Upbeat, dance, peppy, joyful celebration, flirtatious, cheerful energy (e.g. "Akhiyaan Gulaab", "Chaleya", "Dil Cheez Tujhe Dedi", "Mere Rashke Qamar", "Pardesiya", "Nazar Na Lag Jaaye", "Jeena Haraam")
-5. devotional_romantic - Sufi, divine sacred love, prayer, ishq sufiyana, rab, dua, spiritual adoration (e.g. "Rab Ka Shukrana", "Tu Hi Rab Tu Hi Dua", "Is Qadar", "Tujhe Sochta Hoon")
-6. dreamy_romantic - Dreamy, stargazing, midnight journey, peaceful, acoustic chill, relaxing, serene (e.g. "Besabriyaan", "Lo Safar", "Sitaare", "Tum Hardafa Ho", "Jeena Marna")
+IMPORTANT:
+You do NOT have access to the raw audio file.
+Do not invent lyrics.
+Do NOT output arbitrary EQ decibels or raw frequencies.
 
-Reply with ONLY the single category name (one of: sad_romantic, dark_romantic, soft_romantic, happy_romantic, devotional_romantic, dreamy_romantic).`;
+Your goal is two-fold:
+1. Identify the song's DOMINANT romantic mood from the 12 categories:
+   - "sad_romantic", "heartbroken_romantic", "yearning_romantic", "dark_romantic", "sensual_romantic", "soft_romantic", "intimate_romantic", "happy_romantic", "hopeful_romantic", "nostalgic_romantic", "devotional_romantic", "dreamy_romantic"
+
+2. Output a 6-Dimensional Normalized Acoustic Intent Vector (each float strictly between 0.0 and 1.0):
+   - "warmth": 0.0 (thin/cold) to 1.0 (rich chest body & low-mid fullness)
+   - "space": 0.0 (dry/intimate studio) to 1.0 (vast cathedral/horizon reverb & stereo field)
+   - "intensity": 0.0 (delicate acoustic) to 1.0 (dramatic punch & heavy energy)
+   - "brightness": 0.0 (dark vintage sepia) to 1.0 (airy crisp high-end brilliance)
+   - "vocalPresence": 0.0 (recessed behind music) to 1.0 (forward intimate vocal clarity)
+   - "subBassDepth": 0.0 (acoustic light bass) to 1.0 (deep cinematic sub-bass rumble)
+
+Return ONLY valid JSON without markdown formatting in this exact format:
+{
+  "emotion": "sad_romantic",
+  "intent": {
+    "warmth": 0.75,
+    "space": 0.80,
+    "intensity": 0.35,
+    "brightness": 0.30,
+    "vocalPresence": 0.85,
+    "subBassDepth": 0.70
+  }
+}`;
 
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`,
@@ -115,7 +374,8 @@ Reply with ONLY the single category name (one of: sad_romantic, dark_romantic, s
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 800,
+            maxOutputTokens: 300,
+            responseMimeType: 'application/json',
           },
         }),
       }
@@ -129,32 +389,68 @@ Reply with ONLY the single category name (one of: sad_romantic, dark_romantic, s
 
     const data = await res.json();
     const parts = data?.candidates?.[0]?.content?.parts || [];
-    // Extract non-thought part or fallback to last text part
     const contentPart = parts.find((p: { thought?: boolean; text?: string }) => !p.thought && p.text) || parts[parts.length - 1];
-    const rawText = contentPart?.text || '';
+    const rawText = contentPart?.text || '{}';
 
-    const cleaned = rawText.toLowerCase().replace(/[^a-z_]/g, ' ').trim();
+    let parsedEmotion: string = '';
+    let parsedIntent: Partial<AcousticIntent> = {};
+
+    try {
+      const parsed = JSON.parse(rawText);
+      parsedEmotion = (parsed.emotion || '').trim().toLowerCase();
+      if (parsed.intent && typeof parsed.intent === 'object') {
+        parsedIntent = parsed.intent;
+      }
+    } catch {
+      const match = rawText.match(/"emotion"\s*:\s*"([^"]+)"/);
+      if (match) parsedEmotion = match[1].toLowerCase();
+    }
 
     const validEmotions: EmotionType[] = [
       'sad_romantic',
+      'heartbroken_romantic',
+      'yearning_romantic',
       'dark_romantic',
+      'sensual_romantic',
       'soft_romantic',
+      'intimate_romantic',
       'happy_romantic',
+      'hopeful_romantic',
+      'nostalgic_romantic',
       'devotional_romantic',
       'dreamy_romantic',
     ];
 
-    let detected: EmotionType | undefined = validEmotions.find(e => cleaned.split(/\s+/).includes(e));
+    let detected: EmotionType = validEmotions.find(e => e === parsedEmotion) as EmotionType;
+    
+    // Check aliases if not direct match
     if (!detected) {
-      detected = validEmotions.find(e => cleaned.includes(e));
+      if (parsedEmotion === 'heartbroken') detected = 'heartbroken_romantic';
+      else if (parsedEmotion === 'content_romantic') detected = 'soft_romantic';
+      else if (parsedEmotion === 'adoring_romantic') detected = 'happy_romantic';
+      else if (parsedEmotion === 'bittersweet_romantic') detected = 'nostalgic_romantic';
+      else if (parsedEmotion === 'lonely_romantic') detected = 'sad_romantic';
     }
+
     if (!detected) {
       detected = guessFallbackEmotionType(songName, songArtist);
     }
 
+    const defaultIntent = DEFAULT_INTENTS[detected] || DEFAULT_INTENTS.soft_romantic;
+    const validatedIntent: AcousticIntent = {
+      warmth: clampFloat(parsedIntent.warmth, defaultIntent.warmth),
+      space: clampFloat(parsedIntent.space, defaultIntent.space),
+      intensity: clampFloat(parsedIntent.intensity, defaultIntent.intensity),
+      brightness: clampFloat(parsedIntent.brightness, defaultIntent.brightness),
+      vocalPresence: clampFloat(parsedIntent.vocalPresence, defaultIntent.vocalPresence),
+      subBassDepth: clampFloat(parsedIntent.subBassDepth, defaultIntent.subBassDepth),
+    };
+
+    const themeData = EMOTION_MAP[detected] || EMOTION_MAP.soft_romantic;
     const result: EmotionResult = {
       emotion: detected,
-      ...EMOTION_MAP[detected],
+      ...themeData,
+      intent: validatedIntent,
     };
 
     emotionCache.set(cacheKey, result);
@@ -166,110 +462,200 @@ Reply with ONLY the single category name (one of: sad_romantic, dark_romantic, s
   }
 }
 
-// ===== Smart Music Knowledge Fallback for Offline / Missing Key =====
+function clampFloat(val: any, fallback: number): number {
+  if (typeof val !== 'number' || isNaN(val)) return fallback;
+  return Math.max(0.0, Math.min(1.0, Math.round(val * 100) / 100));
+}
+
+// ===== Smart Indian Music Emotion Fallback Heuristic Engine =====
 
 function guessFallbackEmotionType(name: string, artist?: string): EmotionType {
   const text = `${name} ${artist ?? ''}`.toLowerCase();
 
-  // 1. Sad / Rainy Romantic
+  // 1. Heartbroken & Severe Breakup Devastation
   if (
     text.includes('mushkil') ||
-    text.includes('sawan') ||
-    text.includes('galliyan') ||
-    text.includes('wajah tum ho') ||
-    text.includes('tera mera rishta') ||
-    text.includes('tere bina') ||
-    text.includes('tumse bhi zyada') ||
-    text.includes('main agar saamne') ||
+    text.includes('tadap') ||
+    text.includes('channa mereya') ||
     text.includes('judai') ||
-    text.includes('alvida') ||
-    text.includes('tanha') ||
+    text.includes('bhula dena') ||
+    text.includes('dard-e-dil') ||
+    text.includes('dard') ||
     text.includes('roya') ||
     text.includes('aansu') ||
-    text.includes('dard') ||
-    text.includes('kho gaya') ||
     text.includes('bewafa') ||
     text.includes('rula') ||
-    text.includes('rain') ||
-    text.includes('baarish')
+    text.includes('alvida') ||
+    text.includes('bikhra')
   ) {
-    return 'sad_romantic';
+    return 'heartbroken_romantic';
   }
 
-  // 2. Dark Passionate / Obsessive Romantic
+  // 2. Dark & Obsessive Passion
   if (
-    text.includes('deewana') ||
+    text.includes('deewana kar') ||
     text.includes('deewaniyat') ||
     text.includes('mera hua') ||
     text.includes('tum mere ho') ||
     text.includes('terre pyaar mein') ||
     text.includes('tu jo hain') ||
-    text.includes('tum ho mera pyar') ||
     text.includes('hate story') ||
     text.includes('raaz') ||
-    text.includes('danger') ||
-    text.includes('fire') ||
-    text.includes('passion')
+    text.includes('fitoor') ||
+    text.includes('obsess')
   ) {
     return 'dark_romantic';
   }
 
-  // 3. Sufi / Devotional Romantic
+  // 3. Sensual Romance & Seduction
   if (
-    text.includes('rab ka shukrana') ||
-    text.includes('tu hi rab') ||
-    text.includes('is qadar') ||
-    text.includes('tujhe sochta') ||
+    text.includes('zara zara') ||
+    text.includes('ang laga de') ||
+    text.includes('jism') ||
+    text.includes('chemistry') ||
+    text.includes('labon ko') ||
+    text.includes('bheege hoth') ||
+    text.includes('sensual') ||
+    text.includes('garmi')
+  ) {
+    return 'sensual_romantic';
+  }
+
+  // 4. Yearning, Longing & Viraha
+  if (
+    text.includes('besabriyaan') ||
+    text.includes('lo safar') ||
+    text.includes('tu hi haqeeqat') ||
+    text.includes('main woh chaand') ||
+    text.includes('kaun tujhe') ||
+    text.includes('agar tum saath') ||
+    text.includes('intezaar') ||
+    text.includes('tarse') ||
+    text.includes('pee loon') ||
+    text.includes('duriyan') ||
+    text.includes('safar')
+  ) {
+    return 'yearning_romantic';
+  }
+
+  // 5. Devotional & Sufi Sacred Love
+  if (
+    text.includes('kun faya') ||
+    text.includes('sajda') ||
+    text.includes('khuda jane') ||
     text.includes('allah') ||
-    text.includes('rab') ||
-    text.includes('khuda') ||
-    text.includes('dua') ||
-    text.includes('shukr') ||
+    text.includes('rabba') ||
+    text.includes('arziyan') ||
+    text.includes('maula') ||
     text.includes('sufi') ||
-    text.includes('sajda')
+    text.includes('qawwali') ||
+    text.includes('shukr')
   ) {
     return 'devotional_romantic';
   }
 
-  // 4. Happy / Upbeat Romantic
+  // 6. Hopeful & Uplifting Love
   if (
-    text.includes('akhiyaan gulaab') ||
+    text.includes('rab ka shukrana') ||
+    text.includes('tu hi rab') ||
+    text.includes('is qadar') ||
+    text.includes('mitwa') ||
+    text.includes('tum se') ||
+    text.includes('hope') ||
+    text.includes('sitaare')
+  ) {
+    return 'hopeful_romantic';
+  }
+
+  // 7. Happy, Flirtatious & Playful
+  if (
     text.includes('chaleya') ||
+    text.includes('akhiyaan gulaab') ||
     text.includes('dil cheez') ||
-    text.includes('mere rashke qamar') ||
+    text.includes('nazar na lag') ||
     text.includes('pardesiya') ||
-    text.includes('nazar na lag jaaye') ||
+    text.includes('mere rashke qamar') ||
     text.includes('jeena haraam') ||
+    text.includes('matargashti') ||
+    text.includes('uff') ||
     text.includes('dance') ||
     text.includes('party') ||
-    text.includes('masti') ||
-    text.includes('dhoom') ||
-    text.includes('swag')
+    text.includes('sambalpuri') ||
+    text.includes('rangabati')
   ) {
     return 'happy_romantic';
   }
 
-  // 5. Dreamy / Lofi Serene Romantic
+  // 8. Nostalgic 90s Retro Love
   if (
-    text.includes('besabriyaan') ||
-    text.includes('lo safar') ||
-    text.includes('sitaare') ||
-    text.includes('tum hardafa') ||
-    text.includes('jeena marna') ||
-    text.includes('night') ||
-    text.includes('chand') ||
+    text.includes('main agar saamne') ||
+    text.includes('pehla nasha') ||
+    text.includes('baatein ankahee') ||
+    text.includes('tum mile') ||
+    text.includes('kuch kuch hota') ||
+    text.includes('kumar sanu') ||
+    text.includes('udit narayan') ||
+    text.includes('alka yagnik') ||
+    text.includes('90s') ||
+    text.includes('retro') ||
+    text.includes('yaad')
+  ) {
+    return 'nostalgic_romantic';
+  }
+
+  // 9. Intimate Whispers & Close Romance
+  if (
+    text.includes('bol do na zara') ||
+    text.includes('itni si baat') ||
+    text.includes('ijazat') ||
+    text.includes('dil mein ho tum') ||
+    text.includes('naina re') ||
+    text.includes('raabta') ||
+    text.includes('hasi ban gaye')
+  ) {
+    return 'intimate_romantic';
+  }
+
+  // 10. Dreamy & Lofi Nightscape
+  if (
     text.includes('neend') ||
-    text.includes('calm') ||
-    text.includes('safar')
+    text.includes('chaand') ||
+    text.includes('aurora') ||
+    text.includes('taare') ||
+    text.includes('khwaab') ||
+    text.includes('sapne') ||
+    text.includes('lofi') ||
+    text.includes('night')
   ) {
     return 'dreamy_romantic';
   }
 
-  // 6. Soft & Sweet Romantic (Default for gentle love tracks)
+  // 11. Sad Romantic & Lonely Rain
+  if (
+    text.includes('tumse bhi zyada') ||
+    text.includes('jeene bhi de') ||
+    text.includes('tera mera rishta') ||
+    text.includes('sawan') ||
+    text.includes('baarish') ||
+    text.includes('rain') ||
+    text.includes('tanha') ||
+    text.includes('alone') ||
+    text.includes('kho gaya')
+  ) {
+    return 'sad_romantic';
+  }
+
+  // 12. Soft Romantic Default
   return 'soft_romantic';
 }
 
 function guessFallbackEmotion(name: string, artist?: string): EmotionResult {
   const emotion = guessFallbackEmotionType(name, artist);
-  return { emotion, ...EMOTION_MAP[emotion] };
+  const theme = EMOTION_MAP[emotion] || EMOTION_MAP.soft_romantic;
+  const intent = DEFAULT_INTENTS[emotion] || DEFAULT_INTENTS.soft_romantic;
+  return {
+    emotion,
+    ...theme,
+    intent,
+  };
 }

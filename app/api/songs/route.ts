@@ -15,21 +15,53 @@ const FALLBACK_COVERS = [
   'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=300&auto=format&fit=crop&q=80',
 ];
 
-function parseFilename(fileName: string): { name: string; artist: string } {
-  const baseName = fileName.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
-  const cleanName = baseName
-    .replace(/\([^)]*OdiaBazar[^)]*\)/gi, '')
+function cleanTitle(raw: string): string {
+  if (!raw) return '';
+  return raw
+    .replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '')
+    .replace(/\s*[-–—:]?\s*(PagalNew|PagalWorld|PagalSongs|SongsPk|DjPunjab|Mp3Tau|PenduJatt|KoshalWorld|OdiaBazar|RiskyjaTT|NaaSongs|MrJatt|DJMaza|Hungama|Gaana|JioSaavn)(\.Com(\.Se)?)?/gi, '')
+    .replace(/\b(320|128|192|256)\s*kbps\b/gi, '')
+    .replace(/\b(mp3|audio|song|track|download|full audio|lyrical video|full video)\b/gi, '')
+    .replace(/\([^)]*(Pagal|Jatt|World|Bazar|Songs|Music|Kbps|RingTone|Com)[^)]*\)/gi, '')
     .replace(/\[[^\]]*\]/g, '')
+    .replace(/\s*[-–—]\s*$/, '')
+    .replace(/^\s*[-–—]\s*/, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function cleanArtist(raw: string): string {
+  if (!raw) return 'Deluxe Artist';
+  const cleaned = raw
+    .replace(/\s*[-–—:]?\s*(PagalNew|PagalWorld|PagalSongs|SongsPk|DjPunjab|Mp3Tau|PenduJatt|KoshalWorld|OdiaBazar|RiskyjaTT|NaaSongs|MrJatt|DJMaza)(\.Com(\.Se)?)?/gi, '')
+    .replace(/\b(320|128|192|256)\s*kbps\b/gi, '')
+    .replace(/\b(mp3|download)\b/gi, '')
+    .replace(/\([^)]*(Pagal|Jatt|World|Bazar|Songs|Music|Kbps|Com)[^)]*\)/gi, '')
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/\s*[-–—]\s*$/, '')
+    .replace(/^\s*[-–—]\s*/, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 
-  const parts = cleanName.split('-').map((p) => p.trim()).filter(Boolean);
+  if (!cleaned || cleaned.toLowerCase() === 'deluxe mix' || /^(pagal|jatt|world|bazar|dj)/i.test(cleaned)) {
+    return 'Deluxe Artist';
+  }
+  return cleaned;
+}
+
+function parseFilename(fileName: string): { name: string; artist: string } {
+  const baseName = fileName.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
+  const cleaned = cleanTitle(baseName);
+
+  const parts = cleaned.split(/[-–—]/).map((p) => p.trim()).filter(Boolean);
 
   if (parts.length >= 2) {
-    return { name: parts[0], artist: parts.slice(1).join(' - ') };
+    return { name: parts[0], artist: cleanArtist(parts.slice(1).join(' - ')) };
   }
 
-  const name = cleanName.replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
-  return { name: name || fileName, artist: 'Deluxe Mix' };
+  return { name: cleaned || fileName, artist: 'Deluxe Artist' };
 }
 
 export async function GET() {
@@ -59,8 +91,8 @@ export async function GET() {
           const metadata = await parseFile(filePath, { duration: false });
           const common = metadata.common;
 
-          if (common.title) name = common.title;
-          if (common.artist) artist = common.artist;
+          if (common.title) name = cleanTitle(common.title);
+          if (common.artist) artist = cleanArtist(common.artist);
 
           // Check for embedded album cover art image
           if (common.picture && common.picture.length > 0) {
@@ -78,6 +110,10 @@ export async function GET() {
           if (!name) name = fallback.name;
           if (!artist) artist = fallback.artist;
         }
+
+        // Final sanitation pass
+        name = cleanTitle(name) || file.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
+        artist = cleanArtist(artist);
 
         return {
           id: index + 1,

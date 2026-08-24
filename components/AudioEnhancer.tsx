@@ -136,6 +136,46 @@ export default function AudioEnhancer({
                   </div>
                 </div>
 
+                {/* Live Section & Intent Telemetry */}
+                <div className="ai-intent-grid">
+                  <div className="ai-intent-gauge">
+                    <span className="ai-intent-label">Warmth</span>
+                    <div className="ai-intent-bar">
+                      <div
+                        className="ai-intent-fill"
+                        style={{ width: `${Math.round((activeProfile.intent?.warmth ?? 0.7) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="ai-intent-gauge">
+                    <span className="ai-intent-label">Space</span>
+                    <div className="ai-intent-bar">
+                      <div
+                        className="ai-intent-fill"
+                        style={{ width: `${Math.round((activeProfile.intent?.space ?? 0.7) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="ai-intent-gauge">
+                    <span className="ai-intent-label">Vocals</span>
+                    <div className="ai-intent-bar">
+                      <div
+                        className="ai-intent-fill"
+                        style={{ width: `${Math.round((activeProfile.intent?.vocalPresence ?? 0.8) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                  <div className="ai-intent-gauge">
+                    <span className="ai-intent-label">Sub-Bass</span>
+                    <div className="ai-intent-bar">
+                      <div
+                        className="ai-intent-fill"
+                        style={{ width: `${Math.round((activeProfile.intent?.subBassDepth ?? 0.7) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="ai-profile-chips">
                   <span className="ai-chip">Bass +{activeProfile.bassBoost}dB</span>
                   <span className="ai-chip">
@@ -143,6 +183,9 @@ export default function AudioEnhancer({
                   </span>
                   <span className="ai-chip">
                     {activeProfile.loudnessEnabled ? 'Dynamic Punch' : 'Natural Vocals'}
+                  </span>
+                  <span className="ai-chip ai-chip-section">
+                    ✨ Adaptive 60 FPS
                   </span>
                 </div>
               </div>
