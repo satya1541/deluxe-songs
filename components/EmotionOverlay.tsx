@@ -40,6 +40,7 @@ export interface EmotionOverlayProps {
   isPlaying: boolean;
   getLiveFeatures?: () => LiveAudioFeatures;
   playlist?: { name: string; artist?: string }[];
+  animationsEnabled?: boolean;
 }
 
 export const ALL_ROMANTIC_THEMES: {
@@ -374,7 +375,29 @@ export default function EmotionOverlay({
   songArtist,
   isPlaying,
   getLiveFeatures,
+  animationsEnabled = true,
 }: EmotionOverlayProps) {
+  const [internalEnabled, setInternalEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('deluxe_animations_enabled') !== 'false';
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    const handleToggle = (e: any) => {
+      if (e?.detail?.enabled !== undefined) {
+        setInternalEnabled(e.detail.enabled);
+      } else {
+        setInternalEnabled((prev) => !prev);
+      }
+    };
+    window.addEventListener('toggle-animations', handleToggle);
+    return () => window.removeEventListener('toggle-animations', handleToggle);
+  }, []);
+
+  const isFxActive = animationsEnabled && internalEnabled;
+
   const [emotionData, setEmotionData] = useState<EmotionData>(() =>
     getCachedEmotion(songName, songArtist) || getInstantEmotion(songName, songArtist)
   );
@@ -505,7 +528,7 @@ export default function EmotionOverlay({
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    if (!isPlaying) {
+    if (!isPlaying || !isFxActive) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }

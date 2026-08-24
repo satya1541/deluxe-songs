@@ -130,7 +130,54 @@ button {
 .top-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+}
+
+/* Visual FX / Eco Mode (Disable Animations) Toggle Button */
+.topbar-fx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.topbar-fx-btn.fx-active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), rgba(249, 115, 22, 0.25));
+  border-color: rgba(168, 85, 247, 0.55);
+  color: #fed7aa;
+}
+
+.topbar-fx-btn.fx-eco {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.45);
+  color: #86efac;
+}
+
+.topbar-fx-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.topbar-fx-btn .fx-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.topbar-fx-btn .fx-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 /* Fullscreen Cinema Immersion Button in Top Right */
@@ -178,6 +225,29 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fed7aa;
   margin-left: 2px;
+}
+
+/* Global No-Animations Mode (Eco Mode) */
+body.no-animations .album-art,
+body.no-animations .cinema-album-art {
+  animation: none !important;
+}
+
+body.no-animations .online-dot {
+  animation: none !important;
+}
+
+.fx-toggle-row {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.slider-subtext {
+  display: block;
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 2px;
 }
 
 .music-link {

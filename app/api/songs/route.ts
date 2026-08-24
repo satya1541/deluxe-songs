@@ -119,7 +119,7 @@ export async function GET() {
           id: index + 1,
           name,
           artist,
-          file: `/api/music/${encodeURIComponent(file)}`,
+          file: `/music/${encodeURIComponent(file)}`,
           fileName: file,
           cover,
         };

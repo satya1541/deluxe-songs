@@ -479,6 +479,8 @@ export default function MusicPlayer() {
           ref={audioRef}
           src={currentSong.file}
           preload="auto"
+          crossOrigin="anonymous"
+          playsInline
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onCanPlay={handleCanPlay}

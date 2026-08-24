@@ -5,8 +5,19 @@ import { useState, useEffect } from 'react';
 export default function TopBar() {
   const [currentTime, setCurrentTime] = useState<string>('12:00 pm');
   const [onlineCount, setOnlineCount] = useState<number>(41);
+  const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(true);
 
   useEffect(() => {
+    // Check initial stored animation preference
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('deluxe_animations_enabled');
+      const isEnabled = stored !== 'false';
+      setAnimationsEnabled(isEnabled);
+      if (!isEnabled) {
+        document.body.classList.add('no-animations');
+      }
+    }
+
     const updateClock = () => {
       const now = new Date();
       let hours = now.getHours();
@@ -27,9 +38,18 @@ export default function TopBar() {
 
     const onlineInterval = setInterval(updateOnlineCount, 8000);
 
+    const handleExternalToggle = (e: any) => {
+      if (e?.detail?.enabled !== undefined) {
+        setAnimationsEnabled(e.detail.enabled);
+      }
+    };
+
+    window.addEventListener('toggle-animations', handleExternalToggle);
+
     return () => {
       clearInterval(clockInterval);
       clearInterval(onlineInterval);
+      window.removeEventListener('toggle-animations', handleExternalToggle);
     };
   }, []);
 
@@ -37,6 +57,22 @@ export default function TopBar() {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('toggle-cinema-mode'));
     }
+  };
+
+  const handleToggleAnimations = () => {
+    setAnimationsEnabled((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('deluxe_animations_enabled', String(next));
+        if (next) {
+          document.body.classList.remove('no-animations');
+        } else {
+          document.body.classList.add('no-animations');
+        }
+        window.dispatchEvent(new CustomEvent('toggle-animations', { detail: { enabled: next } }));
+      }
+      return next;
+    });
   };
 
   return (
@@ -52,6 +88,18 @@ export default function TopBar() {
       </div>
 
       <div className="top-right">
+        {/* Visual FX / Eco Mode (Disable Animations) Toggle Button */}
+        <button
+          type="button"
+          className={`topbar-fx-btn ${animationsEnabled ? 'fx-active' : 'fx-eco'}`}
+          onClick={handleToggleAnimations}
+          title={animationsEnabled ? 'Visual FX: ON (Click to disable animations / save battery)' : 'Eco Mode: ON (Click to enable visual animations)'}
+          aria-label={animationsEnabled ? 'Disable animations (Eco Mode)' : 'Enable animations'}
+        >
+          <span className="fx-icon">{animationsEnabled ? '✨' : '⚡'}</span>
+          <span className="fx-text">{animationsEnabled ? 'FX' : 'Eco'}</span>
+        </button>
+
         {/* Sleek Fullscreen Cinema Immersion Button */}
         <button
           type="button"

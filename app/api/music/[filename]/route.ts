@@ -1,44 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-
-function nodeStreamToWebStream(nodeStream: fs.ReadStream): ReadableStream {
-  let isClosed = false;
-
-  return new ReadableStream({
-    start(controller) {
-      nodeStream.on('data', (chunk) => {
-        if (isClosed) return;
-        try {
-          controller.enqueue(chunk);
-        } catch {
-          isClosed = true;
-          nodeStream.destroy();
-        }
-      });
-
-      nodeStream.on('end', () => {
-        if (isClosed) return;
-        isClosed = true;
-        try {
-          controller.close();
-        } catch {}
-      });
-
-      nodeStream.on('error', (err) => {
-        if (isClosed) return;
-        isClosed = true;
-        try {
-          controller.error(err);
-        } catch {}
-      });
-    },
-    cancel() {
-      isClosed = true;
-      nodeStream.destroy();
-    },
-  });
-}
+import { Readable } from 'stream';
 
 export async function GET(
   request: NextRequest,
@@ -70,7 +33,7 @@ export async function GET(
     else if (ext === '.m4a' || ext === '.aac') contentType = 'audio/aac';
     else if (ext === '.flac') contentType = 'audio/flac';
 
-    // Support HTTP Range Requests (Audio Seeking & Partial Content)
+    // Support HTTP Range Requests for iOS Safari and Android Chrome
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
@@ -84,8 +47,8 @@ export async function GET(
       }
 
       const chunkSize = end - start + 1;
-      const nodeStream = fs.createReadStream(filePath, { start, end });
-      const webStream = nodeStreamToWebStream(nodeStream);
+      const nodeStream = fs.createReadStream(filePath, { start, end, highWaterMark: 64 * 1024 });
+      const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
 
       return new NextResponse(webStream, {
         status: 206,
@@ -98,8 +61,8 @@ export async function GET(
         },
       });
     } else {
-      const nodeStream = fs.createReadStream(filePath);
-      const webStream = nodeStreamToWebStream(nodeStream);
+      const nodeStream = fs.createReadStream(filePath, { highWaterMark: 64 * 1024 });
+      const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
 
       return new NextResponse(webStream, {
         status: 200,
@@ -116,4 +79,3 @@ export async function GET(
     return NextResponse.json({ error: 'Failed to stream audio' }, { status: 500 });
   }
 }
-
