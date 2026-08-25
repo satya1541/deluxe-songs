@@ -142,10 +142,12 @@ export default function CinemaMode({
       <div className={`cinema-top-bar ${controlsVisible ? 'bar-visible' : 'bar-hidden'}`}>
         <div className="cinema-brand">
           <span className="cinema-sparkle">✨</span>
-          <span className="cinema-brand-title">{currentSong.name}</span>
-          {currentSong.artist && (
-            <span className="cinema-brand-artist">• {currentSong.artist}</span>
-          )}
+          <div className="cinema-brand-text">
+            <span className="cinema-brand-title">{currentSong.name}</span>
+            {currentSong.artist && (
+              <span className="cinema-brand-artist">{currentSong.artist}</span>
+            )}
+          </div>
         </div>
         <div className="cinema-top-actions">
           <button
@@ -153,11 +155,13 @@ export default function CinemaMode({
             className="cinema-exit-btn"
             onClick={onClose}
             title="Exit Cinema Mode (Esc / F)"
+            aria-label="Exit Cinema Mode"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z" />
             </svg>
-            <span>Exit (F)</span>
+            <span className="cinema-exit-label">Exit</span>
+            <kbd className="cinema-kbd">F</kbd>
           </button>
         </div>
       </div>

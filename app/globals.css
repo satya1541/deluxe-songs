@@ -41,6 +41,47 @@ button {
   position: fixed;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
+  background-color: #0b0706;
+}
+
+.bg-image-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transition: opacity 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
+
+.bg-image-layer.bg-fade-in {
+  animation: fadeInBg 1.5s ease-in-out forwards;
+}
+
+.bg-image-layer.bg-fade-out {
+  opacity: 1;
+}
+
+.bg-image-layer.bg-fade-out.active-fade-out {
+  animation: fadeOutBg 1.5s ease-in-out forwards;
+}
+
+@keyframes fadeInBg {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOutBg {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
 .bg-image {
@@ -48,18 +89,18 @@ button {
   height: 100%;
   object-fit: cover;
   object-position: center;
+  transform: scale(1.02);
 }
 
 .bg-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.35) 0%,
-    rgba(0, 0, 0, 0.05) 25%,
-    rgba(0, 0, 0, 0.05) 65%,
-    rgba(0, 0, 0, 0.45) 100%
-  );
+  pointer-events: none;
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0.4) 0%,
+      rgba(0, 0, 0, 0.08) 25%,
+      rgba(0, 0, 0, 0.08) 65%,
+      rgba(0, 0, 0, 0.5) 100%);
 }
 
 /* ===== Top Status Bar ===== */
@@ -103,6 +144,7 @@ button {
 }
 
 @keyframes pulse-dot {
+
   0%,
   100% {
     box-shadow: 0 0 6px rgba(74, 222, 128, 0.6);
@@ -169,7 +211,7 @@ button {
 }
 
 .topbar-visuals-btn {
-  display: flex; /* Always visible as an option */
+  display: none; /* Hidden on desktop by default */
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -190,6 +232,69 @@ button {
 .topbar-visuals-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.35);
+}
+
+/* Screen Stay Awake Button in TopBar */
+.topbar-wake-btn {
+  display: none; /* Hidden on desktop by default */
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.topbar-wake-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.topbar-wake-btn.wake-active {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.18), rgba(245, 158, 11, 0.28));
+  border-color: rgba(251, 191, 36, 0.55);
+  color: #fef08a;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25), 0 4px 15px rgba(0, 0, 0, 0.25);
+}
+
+.topbar-wake-btn.wake-active:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.28), rgba(245, 158, 11, 0.38));
+  border-color: rgba(251, 191, 36, 0.75);
+}
+
+.wake-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fbbf24;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.8);
+}
+
+.wake-dot-pulse {
+  animation: pulse-wake-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse-wake-dot {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.8);
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(251, 191, 36, 1);
+  }
 }
 
 .topbar-kbd {
@@ -303,12 +408,12 @@ button {
 .player-inner {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
-  border-radius: 9999px;
-  padding: 12px 20px 12px 12px;
-  background: rgba(28, 16, 13, 0.65);
+  border-radius: 28px;
+  padding: 14px 20px 12px 14px;
+  background: rgba(28, 16, 13, 0.72);
   backdrop-filter: blur(50px) saturate(1.8) contrast(1.05);
   -webkit-backdrop-filter: blur(50px) saturate(1.8) contrast(1.05);
   border: 1px solid rgba(255, 220, 190, 0.22);
@@ -318,10 +423,17 @@ button {
     inset 0 1.5px 0 rgba(255, 220, 190, 0.3);
 }
 
+.player-main-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
 .album-art-wrapper {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   flex-shrink: 0;
 }
 
@@ -344,6 +456,7 @@ button {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -374,23 +487,27 @@ button {
   flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
 }
 
 .song-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 15.5px;
+  font-weight: 700;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
   margin: 0;
+  letter-spacing: 0.2px;
 }
 
 .artist-name {
   font-size: 13px;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -398,14 +515,19 @@ button {
 }
 
 .progress-bar-container {
-  margin-top: 8px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .progress-bar {
   position: relative;
-  height: 8px;
+  height: 10px;
   width: 100%;
   cursor: pointer;
+  display: flex;
+  align-items: center;
 }
 
 .progress-track {
@@ -423,7 +545,7 @@ button {
 .progress-fill {
   height: 100%;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(90deg, #f97316, #ec4899);
   width: 0%;
   transition: width 0.1s linear;
 }
@@ -438,23 +560,23 @@ button {
   background: #ffffff;
   opacity: 0;
   transition: opacity 0.15s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-.progress-bar:hover .progress-thumb {
+.progress-bar:hover .progress-thumb,
+.progress-bar:active .progress-thumb {
   opacity: 1;
 }
 
 .time-display {
-  margin-top: 6px;
-  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: 11px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.6);
-}
-
-.time-sep {
-  margin: 0 4px;
+  padding: 0 2px;
 }
 
 /* ===== Player Controls ===== */
@@ -515,11 +637,19 @@ button {
   .music-link span {
     display: none;
   }
-  
+
   .topbar-cinema-btn {
     padding: 5px 10px;
+    font-size: 11.5px;
   }
-  
+
+  .topbar-visuals-btn,
+  .topbar-wake-btn {
+    display: flex; /* Visible on mobile/tablet */
+    padding: 5px 10px;
+    font-size: 11.5px;
+  }
+
   .topbar-kbd {
     display: none;
   }
@@ -527,12 +657,17 @@ button {
   .player-inner {
     width: 100%;
     padding: 10px 14px 10px 10px;
-    gap: 12px;
+    gap: 6px;
+    border-radius: 24px;
+  }
+
+  .player-main-row {
+    gap: 10px;
   }
 
   .album-art-wrapper {
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
   }
 
   .song-name {
@@ -542,67 +677,113 @@ button {
   .artist-name {
     font-size: 12px;
   }
-  
-  .control-btn.play-btn {
-    width: 42px;
-    height: 42px;
+
+  .player-controls {
+    gap: 3px;
   }
-  
+
+  .control-btn.play-btn {
+    width: 40px;
+    height: 40px;
+  }
+
   .control-btn.prev-btn,
   .control-btn.next-btn {
     width: 32px;
     height: 32px;
   }
 
+  .control-btn.ai-acoustics-btn,
+  .control-btn.eq-btn {
+    width: 30px;
+    height: 30px;
+  }
+
   .music-player {
     padding: 0 16px;
-    bottom: max(3vh, env(safe-area-inset-bottom));
+    bottom: max(16px, env(safe-area-inset-bottom));
   }
-  
+
+  .time-display {
+    font-size: 10.5px;
+  }
+
   /* Cinema Mode Responsiveness */
+  .cinema-top-bar {
+    padding: max(16px, env(safe-area-inset-top)) 16px 10px 16px;
+    gap: 12px;
+  }
+
+  .cinema-brand-text {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+
+  .cinema-brand-title {
+    font-size: 14px;
+    max-width: 180px;
+  }
+
+  .cinema-brand-artist {
+    font-size: 11.5px;
+    max-width: 180px;
+    margin-left: 0;
+  }
+
+  .cinema-exit-btn {
+    padding: 6px 12px;
+    font-size: 11.5px;
+  }
+
+  .cinema-kbd {
+    display: none;
+  }
+
   .cinema-stage {
     flex-direction: column;
     padding: 0 20px;
     gap: 30px;
   }
-  
+
   .cinema-vinyl-glow {
     width: clamp(260px, 80vw, 400px);
     height: clamp(260px, 80vw, 400px);
   }
-  
+
   .cinema-album-wrapper {
     width: clamp(190px, 60vw, 290px);
     height: clamp(190px, 60vw, 290px);
   }
-  
+
   .cinema-song-title {
     font-size: 20px;
   }
-  
+
   .cinema-control-deck {
     padding: 0 16px 24px 16px;
     padding-bottom: max(24px, env(safe-area-inset-bottom));
   }
-  
+
   .cinema-deck-glass {
     padding: 12px 16px;
     border-radius: 20px;
   }
-  
+
   .cinema-buttons-row {
     flex-wrap: wrap;
     gap: 12px;
     justify-content: center;
   }
-  
+
   .cinema-main-transport {
     flex: 1 1 100%;
     justify-content: center;
     order: -1;
   }
-  
-  .cinema-left-actions, .cinema-right-actions {
+
+  .cinema-left-actions,
+  .cinema-right-actions {
     flex: 1;
     justify-content: center;
   }
@@ -612,9 +793,77 @@ button {
   .top-center {
     display: none;
   }
-  
+
+  .top-right {
+    gap: 8px;
+  }
+
+  .topbar-btn-text {
+    display: none;
+  }
+
+  .topbar-wake-btn,
+  .topbar-visuals-btn,
+  .topbar-cinema-btn {
+    padding: 6px 8px;
+  }
+
   .title-text {
     font-size: clamp(50px, 15vw, 90px);
+  }
+
+  .music-player {
+    padding: 0 10px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .player-inner {
+    padding: 9px 12px 7px 9px;
+    gap: 5px;
+    border-radius: 20px;
+  }
+
+  .player-main-row {
+    gap: 8px;
+  }
+
+  .album-art-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+
+  .song-name {
+    font-size: 13.5px;
+  }
+
+  .artist-name {
+    font-size: 11.5px;
+  }
+
+  .player-controls {
+    gap: 2px;
+  }
+
+  .control-btn.play-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .control-btn.prev-btn,
+  .control-btn.next-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .control-btn.ai-acoustics-btn,
+  .control-btn.eq-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 10px;
+  }
+
+  .time-display {
+    font-size: 9.5px;
   }
 }
 
@@ -652,8 +901,13 @@ button {
 }
 
 @keyframes enhancer-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .enhancer-panel {
@@ -886,11 +1140,9 @@ button {
 .eq-range-input::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 9999px;
-  background: linear-gradient(
-    90deg,
-    rgba(249, 115, 22, 0.5),
-    rgba(251, 146, 60, 0.25)
-  );
+  background: linear-gradient(90deg,
+      rgba(249, 115, 22, 0.5),
+      rgba(251, 146, 60, 0.25));
 }
 
 .eq-range-input::-webkit-slider-thumb {
@@ -913,11 +1165,9 @@ button {
 .eq-range-input::-moz-range-track {
   height: 4px;
   border-radius: 9999px;
-  background: linear-gradient(
-    90deg,
-    rgba(249, 115, 22, 0.5),
-    rgba(251, 146, 60, 0.25)
-  );
+  background: linear-gradient(90deg,
+      rgba(249, 115, 22, 0.5),
+      rgba(251, 146, 60, 0.25));
   border: none;
 }
 
@@ -1119,12 +1369,10 @@ button {
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 220, 190, 0.22) 50%,
-    rgba(255, 255, 255, 0.08) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 220, 190, 0.22) 50%,
+      rgba(255, 255, 255, 0.08) 100%);
   background-size: 200% 100%;
   animation: skeleton-wave 1.8s ease-in-out infinite;
 }
@@ -1133,6 +1381,7 @@ button {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -1359,6 +1608,7 @@ button {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -1385,6 +1635,7 @@ button {
     opacity: 0;
     transform: translateY(16px) scale(0.96);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1618,6 +1869,7 @@ button {
 .upload-files-list::-webkit-scrollbar {
   width: 4px;
 }
+
 .upload-files-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
@@ -1785,13 +2037,16 @@ button {
 .upload-page-root::-webkit-scrollbar {
   width: 8px;
 }
+
 .upload-page-root::-webkit-scrollbar-track {
   background: rgba(12, 6, 8, 0.6);
 }
+
 .upload-page-root::-webkit-scrollbar-thumb {
   background: rgba(249, 115, 22, 0.4);
   border-radius: 9999px;
 }
+
 .upload-page-root::-webkit-scrollbar-thumb:hover {
   background: rgba(249, 115, 22, 0.8);
 }
@@ -2112,6 +2367,7 @@ button {
 .queue-list::-webkit-scrollbar {
   width: 5px;
 }
+
 .queue-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 9999px;
@@ -2320,6 +2576,7 @@ button {
 .library-grid::-webkit-scrollbar {
   width: 6px;
 }
+
 .library-grid::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 9999px;
@@ -2561,7 +2818,7 @@ button {
   z-index: 9999;
   pointer-events: none;
   transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .volume-hud-visible {
@@ -2587,15 +2844,23 @@ button {
   -webkit-backdrop-filter: blur(35px) saturate(2);
   border: 1px solid rgba(255, 200, 160, 0.24);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8),
-              0 0 35px rgba(249, 115, 22, 0.16),
-              inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 0 35px rgba(249, 115, 22, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   animation: hud-bounce 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes hud-bounce {
-  0% { transform: scale(0.94); }
-  50% { transform: scale(1.03); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.94);
+  }
+
+  50% {
+    transform: scale(1.03);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .volume-hud-icon-wrapper {
@@ -2698,7 +2963,7 @@ button {
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.16) 0%, rgba(168, 85, 247, 0.16) 100%);
   border-color: rgba(249, 115, 22, 0.48);
   box-shadow: 0 0 25px rgba(249, 115, 22, 0.16),
-              inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .ai-smart-eq-header {
@@ -2719,9 +2984,17 @@ button {
 }
 
 @keyframes sparkle-spin {
-  0% { transform: rotate(0deg) scale(0.95); }
-  50% { transform: rotate(15deg) scale(1.1); }
-  100% { transform: rotate(-10deg) scale(1); }
+  0% {
+    transform: rotate(0deg) scale(0.95);
+  }
+
+  50% {
+    transform: rotate(15deg) scale(1.1);
+  }
+
+  100% {
+    transform: rotate(-10deg) scale(1);
+  }
 }
 
 .ai-smart-eq-title {
@@ -2893,7 +3166,7 @@ button {
   border-color: rgba(249, 115, 22, 0.65);
   color: #fed7aa;
   box-shadow: 0 0 18px rgba(249, 115, 22, 0.45),
-              inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .control-btn.ai-acoustics-btn.ai-acoustics-active:hover {
@@ -2958,16 +3231,39 @@ button {
 }
 
 @keyframes stage-pulse-1 {
-  0% { transform: scale(0.8); opacity: 0.8; }
-  50% { transform: scale(1.15); opacity: 0.3; }
-  100% { transform: scale(1.3); opacity: 0; }
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 0.3;
+  }
+
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
 }
 
 @keyframes stage-pulse-2 {
-  0% { transform: scale(0.85); opacity: 0.7; }
-  50% { transform: scale(1.2); opacity: 0.25; }
-  100% { transform: scale(1.4); opacity: 0; }
+  0% {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 0.25;
+  }
+
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
 }
+
 /* Floating AI Acoustic Toast */
 .ai-acoustic-toast {
   position: fixed;
@@ -2984,6 +3280,7 @@ button {
     opacity: 0;
     transform: translateX(-50%) translateY(14px) scale(0.94);
   }
+
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
@@ -3065,8 +3362,15 @@ button {
 }
 
 @keyframes cinema-fade-in {
-  from { opacity: 0; transform: scale(1.02); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .cinema-overlay.controls-hidden {
@@ -3080,6 +3384,7 @@ button {
   padding: 24px 36px;
   z-index: 20;
   transition: opacity 0.4s ease, transform 0.4s ease;
+  width: 100%;
 }
 
 .cinema-top-bar.bar-hidden {
@@ -3092,11 +3397,23 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .cinema-sparkle {
   font-size: 20px;
   animation: sparkle-spin 3s ease-in-out infinite alternate;
+  flex-shrink: 0;
+}
+
+.cinema-brand-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .cinema-brand-title {
@@ -3104,20 +3421,26 @@ button {
   font-weight: 700;
   color: #ffffff;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cinema-brand-artist {
   font-size: 13px;
   font-weight: 500;
   color: #fed7aa;
-  margin-left: 6px;
   opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cinema-top-actions {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .cinema-top-btn,
@@ -3133,7 +3456,21 @@ button {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: all 0.22s ease;
+}
+
+.cinema-kbd {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fed7aa;
+  margin-left: 2px;
 }
 
 .cinema-top-btn:hover,
@@ -3182,17 +3519,49 @@ button {
   transition: background 1.5s ease;
 }
 
-.aura-emotion-heartbroken_romantic { background: radial-gradient(circle, #00e5ff 0%, #7c4dff 60%, transparent 80%); }
-.aura-emotion-sad_romantic { background: radial-gradient(circle, #42a5f5 0%, #1565c0 60%, transparent 80%); }
-.aura-emotion-devotional_romantic { background: radial-gradient(circle, #ffb300 0%, #e65100 60%, transparent 80%); }
-.aura-emotion-sensual_romantic { background: radial-gradient(circle, #ff1744 0%, #b71c1c 60%, transparent 80%); }
-.aura-emotion-dark_romantic { background: radial-gradient(circle, #d50000 0%, #4a148c 60%, transparent 80%); }
-.aura-emotion-soft_romantic { background: radial-gradient(circle, #f48fb1 0%, #ad1457 60%, transparent 80%); }
-.aura-emotion-dreamy_romantic { background: radial-gradient(circle, #80deea 0%, #311b92 60%, transparent 80%); }
-.aura-emotion-happy_romantic { background: radial-gradient(circle, #fff176 0%, #f57f17 60%, transparent 80%); }
-.aura-emotion-yearning_romantic { background: radial-gradient(circle, #ffca28 0%, #e65100 60%, transparent 80%); }
-.aura-emotion-hopeful_romantic { background: radial-gradient(circle, #81d4fa 0%, #0288d1 60%, transparent 80%); }
-.aura-emotion-nostalgic_romantic { background: radial-gradient(circle, #ffca28 0%, #4e342e 60%, transparent 80%); }
+.aura-emotion-heartbroken_romantic {
+  background: radial-gradient(circle, #00e5ff 0%, #7c4dff 60%, transparent 80%);
+}
+
+.aura-emotion-sad_romantic {
+  background: radial-gradient(circle, #42a5f5 0%, #1565c0 60%, transparent 80%);
+}
+
+.aura-emotion-devotional_romantic {
+  background: radial-gradient(circle, #ffb300 0%, #e65100 60%, transparent 80%);
+}
+
+.aura-emotion-sensual_romantic {
+  background: radial-gradient(circle, #ff1744 0%, #b71c1c 60%, transparent 80%);
+}
+
+.aura-emotion-dark_romantic {
+  background: radial-gradient(circle, #d50000 0%, #4a148c 60%, transparent 80%);
+}
+
+.aura-emotion-soft_romantic {
+  background: radial-gradient(circle, #f48fb1 0%, #ad1457 60%, transparent 80%);
+}
+
+.aura-emotion-dreamy_romantic {
+  background: radial-gradient(circle, #80deea 0%, #311b92 60%, transparent 80%);
+}
+
+.aura-emotion-happy_romantic {
+  background: radial-gradient(circle, #fff176 0%, #f57f17 60%, transparent 80%);
+}
+
+.aura-emotion-yearning_romantic {
+  background: radial-gradient(circle, #ffca28 0%, #e65100 60%, transparent 80%);
+}
+
+.aura-emotion-hopeful_romantic {
+  background: radial-gradient(circle, #81d4fa 0%, #0288d1 60%, transparent 80%);
+}
+
+.aura-emotion-nostalgic_romantic {
+  background: radial-gradient(circle, #ffca28 0%, #4e342e 60%, transparent 80%);
+}
 
 /* Cinema Album Art Wrapper - Full circular spinning disc identical to outside */
 .cinema-album-wrapper {
@@ -3496,8 +3865,3 @@ button {
   color: #ffffff;
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
 }
-
-
-
-
-

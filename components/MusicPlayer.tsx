@@ -8,6 +8,7 @@ import AudioEnhancer from '@/components/AudioEnhancer';
 import EmotionOverlay, { getInstantEmotion } from '@/components/EmotionOverlay';
 import VolumeHUD from '@/components/VolumeHUD';
 import CinemaMode from '@/components/CinemaMode';
+import { useWakeLock } from '@/hooks/useWakeLock';
 
 const PLAYED_HISTORY_KEY = 'deluxe_played_history_v1';
 
@@ -115,6 +116,21 @@ export default function MusicPlayer() {
   const [enhancerOpen, setEnhancerOpen] = useState<boolean>(false);
   const [cinemaOpen, setCinemaOpen] = useState<boolean>(false);
   const [visualsEnabled, setVisualsEnabled] = useState<boolean>(true);
+  const [screenAwake, setScreenAwake] = useState<boolean>(true);
+
+  // Screen Wake Lock: Keeps mobile and tablet displays awake while playing or in cinema mode
+  const wakeLock = useWakeLock(screenAwake && (isPlaying || cinemaOpen));
+
+  // Broadcast wake lock status to TopBar
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('screen-wake-status', {
+          detail: { isLocked: wakeLock.isLocked, isEnabled: screenAwake },
+        })
+      );
+    }
+  }, [wakeLock.isLocked, screenAwake]);
 
   // Audio engine
   const engine = useAudioEngine(audioRef);
@@ -450,13 +466,24 @@ export default function MusicPlayer() {
       }
     };
 
+    const handleToggleScreenWake = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail !== undefined) {
+        setScreenAwake(customEvent.detail);
+      } else {
+        setScreenAwake((prev) => !prev);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('toggle-cinema-mode', handleCustomCinemaToggle);
     window.addEventListener('toggle-visuals', handleToggleVisuals);
+    window.addEventListener('toggle-screen-wake', handleToggleScreenWake);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('toggle-cinema-mode', handleCustomCinemaToggle);
       window.removeEventListener('toggle-visuals', handleToggleVisuals);
+      window.removeEventListener('toggle-screen-wake', handleToggleScreenWake);
     };
   }, [togglePlay, adjustVolume]);
 
@@ -474,51 +501,53 @@ export default function MusicPlayer() {
     return (
       <div className="music-player">
         <div className="player-inner player-loading">
-          <div className="album-art-wrapper">
-            <div className="album-art skeleton-shimmer">
-              <div className="vinyl-hole" />
+          <div className="player-main-row">
+            <div className="album-art-wrapper">
+              <div className="album-art skeleton-shimmer">
+                <div className="vinyl-hole" />
+              </div>
+            </div>
+
+            <div className="player-info">
+              <div className="skeleton-line skeleton-title" />
+              <div className="skeleton-line skeleton-artist" />
+            </div>
+
+            <div className="player-controls">
+              <div className="control-btn eq-btn" style={{ opacity: 0.4 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="2" y="14" width="4" height="8" rx="1" />
+                  <rect x="10" y="6" width="4" height="16" rx="1" />
+                  <rect x="18" y="10" width="4" height="12" rx="1" />
+                </svg>
+              </div>
+              <div className="control-btn prev-btn" style={{ opacity: 0.4 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                </svg>
+              </div>
+              <div className="control-btn play-btn skeleton-shimmer" style={{ opacity: 0.8 }}>
+                <svg className="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+              <div className="control-btn next-btn" style={{ opacity: 0.4 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 6h2v12h-2zm-2 6L5.5 6v12z" />
+                </svg>
+              </div>
             </div>
           </div>
 
-          <div className="player-info">
-            <div className="skeleton-line skeleton-title" />
-            <div className="skeleton-line skeleton-artist" />
-            <div className="progress-bar-container">
-              <div className="progress-bar">
-                <div className="progress-track">
-                  <div className="progress-fill skeleton-shimmer" style={{ width: '35%' }} />
-                </div>
-              </div>
-              <div className="time-display">
-                <span>0:00</span>
-                <span className="time-sep">/</span>
-                <span>0:00</span>
+          <div className="progress-bar-container">
+            <div className="progress-bar">
+              <div className="progress-track">
+                <div className="progress-fill skeleton-shimmer" style={{ width: '35%' }} />
               </div>
             </div>
-          </div>
-
-          <div className="player-controls">
-            <div className="control-btn eq-btn" style={{ opacity: 0.4 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="2" y="14" width="4" height="8" rx="1" />
-                <rect x="10" y="6" width="4" height="16" rx="1" />
-                <rect x="18" y="10" width="4" height="12" rx="1" />
-              </svg>
-            </div>
-            <div className="control-btn prev-btn" style={{ opacity: 0.4 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-              </svg>
-            </div>
-            <div className="control-btn play-btn skeleton-shimmer" style={{ opacity: 0.8 }}>
-              <svg className="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-            <div className="control-btn next-btn" style={{ opacity: 0.4 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 6h2v12h-2zm-2 6L5.5 6v12z" />
-              </svg>
+            <div className="time-display">
+              <span>0:00</span>
+              <span>0:00</span>
             </div>
           </div>
         </div>
@@ -541,114 +570,116 @@ export default function MusicPlayer() {
           onError={handleAudioError}
         />
         <div className="player-inner">
-          <div className="album-art-wrapper">
-            <div className={`album-art ${isPlaying ? 'playing' : ''}`}>
-              <Image
-                src={currentSong.cover}
-                alt={currentSong.name}
-                width={80}
-                height={80}
-                priority
-                unoptimized
-              />
+          <div className="player-main-row">
+            <div className="album-art-wrapper">
+              <div className={`album-art ${isPlaying ? 'playing' : ''}`}>
+                <Image
+                  src={currentSong.cover}
+                  alt={currentSong.name}
+                  width={80}
+                  height={80}
+                  priority
+                  unoptimized
+                />
+              </div>
+              <div className="vinyl-hole"></div>
             </div>
-            <div className="vinyl-hole"></div>
+
+            <div className="player-info">
+              <p className="song-name">{currentSong.name}</p>
+              <p className="artist-name">{currentSong.artist}</p>
+            </div>
+
+            <div className="player-controls">
+              {/* Direct AI Smart Acoustics Button */}
+              <button
+                type="button"
+                className={`control-btn ai-acoustics-btn ${aiSmartEq ? 'ai-acoustics-active' : ''}`}
+                onClick={toggleAiSmartEq}
+                aria-label="Toggle AI Smart Acoustics"
+                title={
+                  aiSmartEq && activeProfile
+                    ? `✨ AI Smart Acoustics: ON (${activeProfile.name})`
+                    : '✨ Turn ON AI Smart Acoustics'
+                }
+              >
+                <span className="ai-btn-sparkle">✨</span>
+                <span className="ai-btn-label">AI</span>
+              </button>
+
+              {/* EQ Button */}
+              <button
+                type="button"
+                className={`control-btn eq-btn ${enhancerOpen ? 'eq-active' : ''}`}
+                onClick={toggleEnhancer}
+                aria-label="Audio Enhancer"
+                title="Equalizer & Sound Effects"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="2" y="14" width="4" height="8" rx="1" />
+                  <rect x="10" y="6" width="4" height="16" rx="1" />
+                  <rect x="18" y="10" width="4" height="12" rx="1" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                className="control-btn prev-btn"
+                onClick={prevSong}
+                aria-label="Previous track"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                className="control-btn play-btn"
+                onClick={togglePlay}
+                aria-label="Play or Pause"
+              >
+                {isPlaying ? (
+                  <svg className="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                ) : (
+                  <svg className="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="control-btn next-btn"
+                onClick={nextSong}
+                aria-label="Next track"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16 6h2v12h-2zm-2 6L5.5 6v12z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div className="player-info">
-            <p className="song-name">{currentSong.name}</p>
-            <p className="artist-name">{currentSong.artist}</p>
-            <div className="progress-bar-container">
-              <div className="progress-bar" ref={progressBarRef} onClick={handleSeek}>
-                <div className="progress-track">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${progressPercent}%` }}
-                  ></div>
-                </div>
+          <div className="progress-bar-container">
+            <div className="progress-bar" ref={progressBarRef} onClick={handleSeek}>
+              <div className="progress-track">
                 <div
-                  className="progress-thumb"
-                  style={{ left: `${progressPercent}%` }}
+                  className="progress-fill"
+                  style={{ width: `${progressPercent}%` }}
                 ></div>
               </div>
-              <div className="time-display">
-                <span>{formatTime(currentTime)}</span>
-                <span className="time-sep">/</span>
-                <span>{formatTime(duration)}</span>
-              </div>
+              <div
+                className="progress-thumb"
+                style={{ left: `${progressPercent}%` }}
+              ></div>
             </div>
-          </div>
-
-          <div className="player-controls">
-            {/* Direct AI Smart Acoustics Button */}
-            <button
-              type="button"
-              className={`control-btn ai-acoustics-btn ${aiSmartEq ? 'ai-acoustics-active' : ''}`}
-              onClick={toggleAiSmartEq}
-              aria-label="Toggle AI Smart Acoustics"
-              title={
-                aiSmartEq && activeProfile
-                  ? `✨ AI Smart Acoustics: ON (${activeProfile.name})`
-                  : '✨ Turn ON AI Smart Acoustics'
-              }
-            >
-              <span className="ai-btn-sparkle">✨</span>
-              <span className="ai-btn-label">AI</span>
-            </button>
-
-            {/* EQ Button */}
-            <button
-              type="button"
-              className={`control-btn eq-btn ${enhancerOpen ? 'eq-active' : ''}`}
-              onClick={toggleEnhancer}
-              aria-label="Audio Enhancer"
-              title="Equalizer & Sound Effects"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="2" y="14" width="4" height="8" rx="1" />
-                <rect x="10" y="6" width="4" height="16" rx="1" />
-                <rect x="18" y="10" width="4" height="12" rx="1" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className="control-btn prev-btn"
-              onClick={prevSong}
-              aria-label="Previous track"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className="control-btn play-btn"
-              onClick={togglePlay}
-              aria-label="Play or Pause"
-            >
-              {isPlaying ? (
-                <svg className="pause-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                </svg>
-              ) : (
-                <svg className="play-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
-            </button>
-
-            <button
-              type="button"
-              className="control-btn next-btn"
-              onClick={nextSong}
-              aria-label="Next track"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M16 6h2v12h-2zm-2 6L5.5 6v12z" />
-              </svg>
-            </button>
+            <div className="time-display">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
           </div>
         </div>
       </div>
