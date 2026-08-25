@@ -717,6 +717,7 @@ export default function MusicPlayer() {
         aiSmartEq={aiSmartEq}
         onToggleAiSmartEq={toggleAiSmartEq}
         onOpenEnhancer={() => setEnhancerOpen(true)}
+        isMetadataLoaded={!!(currentSong as any)._metadataFetched}
       />
 
       {/* Audio Enhancer Panel with AI Smart Acoustics */}

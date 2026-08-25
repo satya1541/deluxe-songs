@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Song } from '@/types/music';
 import { EmotionType } from '@/components/EmotionOverlay';
 import { AudioEngineControls } from '@/hooks/useAudioEngine';
+import LyricsView from '@/components/LyricsView';
 
 interface CinemaModeProps {
   isActive: boolean;
@@ -22,6 +23,7 @@ interface CinemaModeProps {
   aiSmartEq: boolean;
   onToggleAiSmartEq: () => void;
   onOpenEnhancer: () => void;
+  isMetadataLoaded?: boolean;
 }
 
 function formatTime(seconds: number): string {
@@ -46,15 +48,17 @@ export default function CinemaMode({
   engine,
   aiSmartEq,
   onToggleAiSmartEq,
+  isMetadataLoaded = true,
 }: CinemaModeProps) {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [scrubTime, setScrubTime] = useState<number | null>(null);
+  const [showLyrics, setShowLyrics] = useState<boolean>(true);
 
   const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressBarRef = useRef<HTMLDivElement | null>(null);
 
-  // Mouse idle detection: Auto-hide controls after 2.5 seconds of inactivity
+  // Mouse idle detection: Auto-hide controls after 3 seconds of inactivity
   const handleMouseMove = useCallback(() => {
     setControlsVisible(true);
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -62,7 +66,7 @@ export default function CinemaMode({
       if (isPlaying && !isScrubbing) {
         setControlsVisible(false);
       }
-    }, 2500);
+    }, 3000);
   }, [isPlaying, isScrubbing]);
 
   useEffect(() => {
@@ -74,6 +78,21 @@ export default function CinemaMode({
       if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     };
   }, [isActive, handleMouseMove]);
+
+  // Keyboard shortcut L to toggle lyrics
+  useEffect(() => {
+    if (!isActive) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        setShowLyrics((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isActive]);
 
   // Fullscreen toggle helper with cross-browser support
   useEffect(() => {
@@ -134,11 +153,11 @@ export default function CinemaMode({
 
   return (
     <div
-      className={`cinema-overlay emotion-cinema-${emotion || 'soft_romantic'} ${controlsVisible ? 'controls-shown' : 'controls-hidden'}`}
+      className={`cinema-overlay emotion-cinema-${emotion || 'soft_romantic'} ${controlsVisible ? 'controls-shown' : 'controls-hidden'} ${showLyrics ? 'cinema-lyrics-on' : 'cinema-lyrics-off'}`}
       onMouseMove={handleMouseMove}
       aria-label="Cinema Fullscreen Immersion"
     >
-      {/* Top Floating Bar: Shows current song name & artist in place of Deluxe Cinema Immersion */}
+      {/* Top Floating Bar */}
       <div className={`cinema-top-bar ${controlsVisible ? 'bar-visible' : 'bar-hidden'}`}>
         <div className="cinema-brand">
           <span className="cinema-sparkle">✨</span>
@@ -150,6 +169,23 @@ export default function CinemaMode({
           </div>
         </div>
         <div className="cinema-top-actions">
+          {/* Lyrics toggle button in top bar */}
+          <button
+            type="button"
+            className={`cinema-top-btn ${showLyrics ? 'cinema-lyrics-active' : ''}`}
+            onClick={() => setShowLyrics((prev) => !prev)}
+            title={showLyrics ? 'Hide Lyrics (L)' : 'Show Synchronized Lyrics (L)'}
+            aria-label="Toggle Lyrics"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              <line x1="9" y1="10" x2="15" y2="10" />
+              <line x1="9" y1="14" x2="13" y2="14" />
+            </svg>
+            <span className="cinema-exit-label">Lyrics</span>
+            <kbd className="cinema-kbd">L</kbd>
+          </button>
+
           <button
             type="button"
             className="cinema-exit-btn"
@@ -166,37 +202,55 @@ export default function CinemaMode({
         </div>
       </div>
 
-      {/* Main Center Stage: Full spinning circular album cover (spinning like outside player) */}
-      <div className="cinema-stage stage-centered">
-        <div className="cinema-vinyl-wrap">
-          <div className={`cinema-vinyl-glow aura-emotion-${emotion || 'soft_romantic'}`} />
-          
-          <div className="cinema-album-wrapper">
-            <div className={`cinema-album-art ${isPlaying ? 'playing' : ''}`}>
-              <Image
-                src={currentSong.cover}
-                alt={currentSong.name}
-                width={300}
-                height={300}
-                className="cinema-cover-img"
-                priority
-                unoptimized
-              />
+      {/* Main Stage: Split layout when lyrics active, centered when lyrics hidden */}
+      <div className={`cinema-stage ${showLyrics ? 'cinema-stage-split' : 'stage-centered'}`}>
+        {/* Left Side: Spinning Vinyl Cover & Meta */}
+        <div className="cinema-stage-left">
+          <div className="cinema-vinyl-wrap">
+            <div className={`cinema-vinyl-glow aura-emotion-${emotion || 'soft_romantic'}`} />
+            
+            <div className="cinema-album-wrapper">
+              <div className={`cinema-album-art ${isPlaying ? 'playing' : ''}`}>
+                <Image
+                  src={currentSong.cover}
+                  alt={currentSong.name}
+                  width={320}
+                  height={320}
+                  className="cinema-cover-img"
+                  priority
+                  unoptimized
+                />
+              </div>
+              <div className="cinema-vinyl-hole" />
             </div>
-            <div className="cinema-vinyl-hole" />
-          </div>
 
-          <div className="cinema-song-meta">
-            <h2 className="cinema-song-title">{currentSong.name}</h2>
-            <p className="cinema-artist-name">{currentSong.artist}</p>
+            <div className="cinema-song-meta">
+              <h2 className="cinema-song-title">{currentSong.name}</h2>
+              <p className="cinema-artist-name">{currentSong.artist}</p>
+            </div>
           </div>
         </div>
+
+        {/* Right Side: Real-Time Studio Synchronized Lyrics */}
+        {showLyrics && (
+          <div className="cinema-stage-right">
+            <LyricsView
+              songName={currentSong.name}
+              songArtist={currentSong.artist}
+              currentTime={displayTime}
+              duration={duration}
+              onSeek={onSeek}
+              isMetadataLoaded={isMetadataLoaded}
+              themeEmotion={emotion || 'soft_romantic'}
+            />
+          </div>
+        )}
       </div>
 
       {/* Bottom Floating Glass Control Deck */}
       <div className={`cinema-control-deck ${controlsVisible ? 'deck-visible' : 'deck-hidden'}`}>
         <div className="cinema-deck-glass">
-          {/* Progress Timeline with smooth forward/backward seek & drag */}
+          {/* Progress Timeline */}
           <div className="cinema-progress-row">
             <span className="cinema-time-current">{formatTime(displayTime)}</span>
             <div
@@ -229,6 +283,18 @@ export default function CinemaMode({
               >
                 <span className="ai-btn-sparkle">✨</span>
                 <span>AI Smart EQ</span>
+              </button>
+
+              <button
+                type="button"
+                className={`cinema-tool-btn ${showLyrics ? 'cinema-lyrics-active' : ''}`}
+                onClick={() => setShowLyrics((prev) => !prev)}
+                title="Toggle Synchronized Lyrics (L)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>Lyrics</span>
               </button>
             </div>
 

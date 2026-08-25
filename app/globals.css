@@ -720,72 +720,257 @@ button {
     gap: 1px;
   }
 
+  .cinema-top-bar {
+    padding: max(14px, env(safe-area-inset-top)) 16px 8px 16px;
+  }
+
   .cinema-brand-title {
     font-size: 14px;
-    max-width: 180px;
+    max-width: 160px;
   }
 
   .cinema-brand-artist {
-    font-size: 11.5px;
-    max-width: 180px;
+    font-size: 11px;
+    max-width: 160px;
     margin-left: 0;
   }
 
+  .cinema-top-btn,
   .cinema-exit-btn {
-    padding: 6px 12px;
-    font-size: 11.5px;
+    padding: 6px 10px;
+    font-size: 11px;
+    gap: 5px;
   }
 
   .cinema-kbd {
     display: none;
   }
 
+  /* Cinema Stage Base on Mobile */
   .cinema-stage {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
     flex-direction: column;
-    padding: 0 20px;
-    gap: 30px;
+    padding: 0 16px;
+    gap: 12px;
+    overflow: hidden;
   }
 
-  .cinema-vinyl-glow {
-    width: clamp(260px, 80vw, 400px);
-    height: clamp(260px, 80vw, 400px);
+  /* When Lyrics are ON on Mobile (Apple Music / Spotify Style) */
+  .cinema-overlay.cinema-lyrics-on .cinema-stage {
+    justify-content: flex-start;
   }
 
-  .cinema-album-wrapper {
-    width: clamp(190px, 60vw, 290px);
-    height: clamp(190px, 60vw, 290px);
+  .cinema-overlay.cinema-lyrics-on .cinema-stage-left {
+    max-width: 100%;
+    width: 100%;
+    flex: 0 0 auto;
+    transform: none;
   }
 
-  .cinema-song-title {
+  .cinema-overlay.cinema-lyrics-on .cinema-vinyl-wrap {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 6px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+  }
+
+  .cinema-overlay.cinema-lyrics-on .cinema-vinyl-glow {
+    display: none;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .cinema-album-wrapper {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .cinema-vinyl-hole {
+    width: 8px;
+    height: 8px;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .cinema-song-meta {
+    text-align: left;
+    margin: 0;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .cinema-song-title {
+    font-size: 14px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .cinema-artist-name {
+    font-size: 11.5px;
+    margin: 1px 0 0 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .cinema-stage-right {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .lyrics-container {
+    height: 100%;
+    max-height: none;
+    padding: 20px 8px 60px 8px;
+    mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 10%, rgba(0, 0, 0, 1) 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 10%, rgba(0, 0, 0, 1) 85%, transparent 100%);
+  }
+
+  .cinema-overlay.cinema-lyrics-on .lyrics-scroll-track {
+    text-align: left;
+    gap: 18px;
+  }
+
+  .cinema-overlay.cinema-lyrics-on .lyric-line {
+    font-size: clamp(20px, 5.8vw, 26px);
+    font-weight: 700;
+    line-height: 1.35;
+    transform-origin: left center;
+    margin-left: 0;
+    padding: 2px 6px;
+  }
+
+  /* When Lyrics are OFF on Mobile (Full Centered Spinning Disc) */
+  .cinema-overlay.cinema-lyrics-off .cinema-stage {
+    justify-content: center;
+    align-items: center;
+  }
+
+  .cinema-overlay.cinema-lyrics-off .cinema-stage-left {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .cinema-overlay.cinema-lyrics-off .cinema-vinyl-wrap {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cinema-overlay.cinema-lyrics-off .cinema-vinyl-glow {
+    width: clamp(220px, 70vw, 300px);
+    height: clamp(220px, 70vw, 300px);
+  }
+
+  .cinema-overlay.cinema-lyrics-off .cinema-album-wrapper {
+    width: clamp(200px, 62vw, 270px);
+    height: clamp(200px, 62vw, 270px);
+  }
+
+  .cinema-overlay.cinema-lyrics-off .cinema-song-meta {
+    text-align: center;
+    margin-top: 14px;
+  }
+
+  .cinema-overlay.cinema-lyrics-off .cinema-song-title {
     font-size: 20px;
   }
 
+  /* Mobile Control Deck Docked Securely at Bottom */
   .cinema-control-deck {
-    padding: 0 16px 24px 16px;
-    padding-bottom: max(24px, env(safe-area-inset-bottom));
+    padding: 8px 14px max(14px, env(safe-area-inset-bottom)) 14px;
+    flex-shrink: 0;
+    width: 100%;
+    z-index: 25;
   }
 
   .cinema-deck-glass {
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-radius: 20px;
+    gap: 8px;
+  }
+
+  .cinema-progress-row {
+    gap: 10px;
+  }
+
+  .cinema-time-current,
+  .cinema-time-duration {
+    font-size: 10.5px;
+    min-width: 30px;
   }
 
   .cinema-buttons-row {
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .cinema-main-transport {
-    flex: 1 1 100%;
-    justify-content: center;
-    order: -1;
+    flex: 0 0 auto;
+    order: 0;
+    gap: 12px;
   }
 
-  .cinema-left-actions,
+  .cinema-play-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .cinema-transport-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .cinema-left-actions {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .cinema-tool-btn {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+
+  .cinema-tool-btn span:not(.ai-btn-sparkle) {
+    display: none;
+  }
+
+  .cinema-tool-btn.cinema-lyrics-active span,
+  .cinema-tool-btn span.ai-btn-sparkle {
+    display: inline-block;
+  }
+
   .cinema-right-actions {
-    flex: 1;
-    justify-content: center;
+    flex: 0 0 auto;
+  }
+
+  .cinema-volume-wrap {
+    width: 75px;
+    gap: 6px;
+  }
+
+  .cinema-volume-slider {
+    width: 50px;
   }
 }
 
@@ -3493,10 +3678,205 @@ button {
   margin: 0 auto;
   width: 100%;
   z-index: 10;
+  min-height: 0;
 }
 
 .cinema-stage.stage-centered {
   justify-content: center;
+}
+
+.cinema-stage.cinema-stage-split {
+  justify-content: space-between;
+  gap: 40px;
+  align-items: center;
+}
+
+.cinema-stage-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 520px;
+}
+
+.cinema-stage-right {
+  flex: 1.25;
+  height: 100%;
+  max-height: calc(100vh - 240px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  position: relative;
+}
+
+/* ===================================================================
+   🎤 APPLE MUSIC / SPOTIFY STYLE SYNCHRONIZED KARAOKE LYRICS
+   =================================================================== */
+
+.lyrics-container {
+  width: 100%;
+  height: 100%;
+  max-height: 520px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 120px 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 15%, rgba(0, 0, 0, 1) 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 1) 15%, rgba(0, 0, 0, 1) 85%, transparent 100%);
+}
+
+.lyrics-container::-webkit-scrollbar {
+  display: none;
+}
+
+.lyrics-scroll-track {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: left;
+  background: transparent;
+}
+
+.lyric-line {
+  font-size: clamp(24px, 3.2vw, 36px);
+  font-weight: 700;
+  line-height: 1.38;
+  letter-spacing: -0.2px;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  user-select: none;
+  transform-origin: left center;
+  padding: 4px 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  filter: none;
+  display: inline-block;
+  width: fit-content;
+}
+
+.lyric-line:hover {
+  opacity: 1;
+}
+
+.lyric-line.lyric-upcoming {
+  color: rgba(255, 255, 255, 0.32);
+  transform: scale(0.96);
+  opacity: 0.7;
+}
+
+.lyric-line.lyric-past {
+  color: rgba(255, 255, 255, 0.22);
+  transform: scale(0.94);
+  opacity: 0.55;
+}
+
+/* 🌊 Apple Music Sing: Progressive Karaoke Sweep (Pure Crisp Text - Zero Shadow/Backdrop) */
+.lyric-line.lyric-active {
+  background: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #ffffff var(--sweep-progress, 0%),
+    rgba(255, 255, 255, 0.36) calc(var(--sweep-progress, 0%) + 18%),
+    rgba(255, 255, 255, 0.36) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 1;
+  filter: none;
+  box-shadow: none;
+  text-shadow: none;
+  transform: scale(1.05);
+  will-change: transform, background;
+}
+
+/* Shimmer Loading State */
+.lyrics-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+}
+
+.lyrics-shimmer-line {
+  height: 28px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.08) 25%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.08) 75%);
+  background-size: 200% 100%;
+  animation: shimmer-load 1.8s infinite;
+}
+
+@keyframes shimmer-load {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Empty / Instrumental Card */
+.lyrics-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lyrics-empty-card {
+  text-align: center;
+  padding: 30px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+}
+
+.lyrics-empty-icon {
+  font-size: 36px;
+  color: #fed7aa;
+  opacity: 0.8;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.lyrics-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.lyrics-empty-desc {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+}
+
+/* Plain Lyrics */
+.lyrics-plain {
+  padding: 40px 20px;
+}
+
+.lyrics-plain-text {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.cinema-tool-btn.cinema-lyrics-active,
+.cinema-top-btn.cinema-lyrics-active {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3));
+  border-color: rgba(236, 72, 153, 0.6);
+  color: #fbcfe8;
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.35);
 }
 
 .cinema-vinyl-wrap {
@@ -3851,6 +4231,58 @@ button {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive Mobile Cinema Adjustments */
+@media (max-width: 768px) {
+  .cinema-right-actions {
+    display: none !important;
+  }
+
+  .cinema-control-deck {
+    padding: 0 16px calc(14px + env(safe-area-inset-bottom, 0px)) 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .cinema-deck-glass {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 16px;
+    border-radius: 22px;
+    box-sizing: border-box;
+  }
+
+  .cinema-buttons-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .cinema-left-actions {
+    gap: 6px;
+  }
+
+  .cinema-tool-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+    border-radius: 9px;
+  }
+
+  .cinema-main-transport {
+    gap: 10px;
+  }
+
+  .cinema-play-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .cinema-transport-btn {
+    width: 32px;
+    height: 32px;
+  }
 }
 
 /* Control buttons glyphs */
