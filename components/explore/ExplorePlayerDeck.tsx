@@ -391,12 +391,24 @@ export default function ExplorePlayerDeck({
           onCanPlay={() => setIsLoadingAudio(false)}
           onWaiting={() => setIsLoadingAudio(true)}
           onEnded={handleSongEnded}
-          onError={() => {
+          onError={async () => {
             setIsLoadingAudio(false);
             const err = audioRef.current?.error;
+            let codeLabel = 'Stream error';
             if (err) {
-              showToast('Audio stream interrupted. Tap to retry.', '⚠️');
+              if (err.code === 1) codeLabel = 'Aborted';
+              else if (err.code === 2) codeLabel = 'Network error';
+              else if (err.code === 3) codeLabel = 'Decode error';
+              else if (err.code === 4) codeLabel = 'Unsupported/404';
             }
+            let httpStatus = '';
+            try {
+              if (currentSong?.streamUrl) {
+                const check = await fetch(currentSong.streamUrl, { method: 'HEAD' });
+                if (!check.ok) httpStatus = ` [HTTP ${check.status}]`;
+              }
+            } catch {}
+            showToast(`${codeLabel}${httpStatus}. Tap to retry.`, '⚠️');
           }}
           preload="auto"
         />

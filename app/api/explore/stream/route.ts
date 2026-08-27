@@ -3,6 +3,8 @@ import { resolveYouTubeStreamUrl, resolveSoundCloudStreamUrl } from '@/lib/multi
 
 export const dynamic = 'force-dynamic';
 
+export const HEAD = GET;
+
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
@@ -26,6 +28,9 @@ export async function GET(request: NextRequest) {
   try {
     const transcodeUrl = request.nextUrl.searchParams.get('transcodeUrl');
 
+    const clientRange = request.headers.get('range');
+    console.log(`[STREAM REQ] source=${source} id=${idParam || 'none'} range=${clientRange || 'none'}`);
+
     if (source === 'youtube' && idParam) {
       const cleanId = decodeURIComponent(idParam).replace(/^yt_/, '');
       targetUrl = await resolveYouTubeStreamUrl(cleanId);
@@ -40,11 +45,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (!targetUrl) {
+      console.log(`[STREAM ERROR] Target URL could not be resolved: source=${source} id=${idParam}`);
       return new NextResponse('Stream source not resolvable or missing parameters', { status: 400 });
     }
 
-    // Forward range request headers only when present (crucial for iOS Safari & Android audio engines)
-    const clientRange = request.headers.get('range');
     const headers: Record<string, string> = {
       'User-Agent': customUserAgent,
     };
@@ -65,6 +69,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!upstreamRes.ok && upstreamRes.status !== 206) {
+      console.log(`[STREAM UPSTREAM ERROR] Upstream status=${upstreamRes.status} statusText=${upstreamRes.statusText} targetUrl=${targetUrl.slice(0, 80)}...`);
       return new NextResponse(`Upstream error: ${upstreamRes.statusText}`, {
         status: upstreamRes.status,
       });
@@ -93,6 +98,8 @@ export async function GET(request: NextRequest) {
     const etag = upstreamRes.headers.get('etag') || `"${source || 'track'}-${(idParam || urlParam || 'stream').slice(0, 32)}"`;
     responseHeaders.set('ETag', etag);
     responseHeaders.set('Cache-Control', 'public, max-age=3600');
+
+    console.log(`[STREAM SERVED] Status=${upstreamRes.status} Range=${contentRange || 'none'} Type=${rawType}`);
 
     // Safely wrap upstream stream to handle client disconnects / seeks gracefully
     const bodyStream = new ReadableStream({

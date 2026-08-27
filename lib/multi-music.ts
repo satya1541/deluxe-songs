@@ -239,11 +239,17 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
     // Check memory cache first - CRUCIAL for mobile Safari / AVPlayer which sends multiple range probes
     const cached = ytStreamUrlCache.get(cleanId);
     if (cached && Date.now() < cached.expiresAt) {
+      console.log(`[YT STREAM] Cache HIT for videoId=${cleanId}`);
       return cached.url;
     }
 
+    console.log(`[YT STREAM] Resolving fresh stream for videoId=${cleanId}...`);
+
     const yt = await getInnertube();
-    if (!yt) return null;
+    if (!yt) {
+      console.log(`[YT STREAM ERROR] Failed to initialize Innertube`);
+      return null;
+    }
 
     // 1. Try ANDROID client for itag 18 (Universal progressive MP4 isommp42 with moov at the front).
     // This is universally playable across 100% of iOS Safari, Android, and Desktop <audio> elements without DASH/MSE errors.
@@ -255,13 +261,15 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
       const combinedFormats = androidRes.data?.streamingData?.formats || [];
       const itag18 = combinedFormats.find((f: any) => f.itag === 18 && f.url);
       if (itag18?.url) {
+        console.log(`[YT STREAM] Resolved itag 18 (progressive MP4) via ANDROID client for videoId=${cleanId}`);
         ytStreamUrlCache.set(cleanId, {
           url: itag18.url,
           expiresAt: Date.now() + 3 * 60 * 60 * 1000,
         });
         return itag18.url;
       }
-    } catch {
+    } catch (androidErr: any) {
+      console.log(`[YT STREAM] ANDROID client attempt error: ${androidErr?.message}`);
       // Fall through to VISIONOS if ANDROID client fails
     }
 
@@ -298,16 +306,19 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
     const finalUrl = chosenFormat?.url || null;
 
     if (finalUrl) {
+      console.log(`[YT STREAM] Resolved adaptive format (${chosenFormat?.mimeType}) via VISIONOS for videoId=${cleanId}`);
       // Cache URL for 3 hours (YouTube stream URLs are valid for 6 hours)
       ytStreamUrlCache.set(cleanId, {
         url: finalUrl,
         expiresAt: Date.now() + 3 * 60 * 60 * 1000,
       });
+    } else {
+      console.log(`[YT STREAM ERROR] No audio format URL available for videoId=${cleanId}`);
     }
 
     return finalUrl;
-  } catch (err) {
-    console.error('Failed to resolve YouTube stream URL:', err);
+  } catch (err: any) {
+    console.error(`[YT STREAM ERROR] Failed to resolve YouTube stream for ${videoId}:`, err?.message || err);
     return null;
   }
 }
