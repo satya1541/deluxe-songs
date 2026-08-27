@@ -104,8 +104,11 @@ export default function ExplorePlayerDeck({
         .then(() => {
           setIsLoadingAudio(false);
         })
-        .catch(() => {
+        .catch((err) => {
           setIsLoadingAudio(false);
+          if (err?.name === 'NotAllowedError') {
+            showToast('Tap ▶️ to start audio', '▶️');
+          }
         });
     }
   }, [currentSong?.id, currentSong?.streamUrl]);
@@ -388,7 +391,13 @@ export default function ExplorePlayerDeck({
           onCanPlay={() => setIsLoadingAudio(false)}
           onWaiting={() => setIsLoadingAudio(true)}
           onEnded={handleSongEnded}
-          onError={() => setIsLoadingAudio(false)}
+          onError={() => {
+            setIsLoadingAudio(false);
+            const err = audioRef.current?.error;
+            if (err) {
+              showToast('Audio stream interrupted. Tap to retry.', '⚠️');
+            }
+          }}
           preload="auto"
         />
 

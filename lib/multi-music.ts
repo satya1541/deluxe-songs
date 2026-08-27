@@ -245,7 +245,27 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
     const yt = await getInnertube();
     if (!yt) return null;
 
-    // Use VISIONOS client - provides high-bitrate unthrottled audio (167k Opus / 131k AAC) without SABR/403 blocks
+    // 1. Try ANDROID client for itag 18 (Universal progressive MP4 isommp42 with moov at the front).
+    // This is universally playable across 100% of iOS Safari, Android, and Desktop <audio> elements without DASH/MSE errors.
+    try {
+      const androidRes = await yt.actions.execute('/player', {
+        videoId: cleanId,
+        client: 'ANDROID',
+      });
+      const combinedFormats = androidRes.data?.streamingData?.formats || [];
+      const itag18 = combinedFormats.find((f: any) => f.itag === 18 && f.url);
+      if (itag18?.url) {
+        ytStreamUrlCache.set(cleanId, {
+          url: itag18.url,
+          expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+        });
+        return itag18.url;
+      }
+    } catch {
+      // Fall through to VISIONOS if ANDROID client fails
+    }
+
+    // 2. Fallback: Use VISIONOS client (adaptive formats)
     const res = await yt.actions.execute('/player', {
       videoId: cleanId,
       client: 'VISIONOS',
