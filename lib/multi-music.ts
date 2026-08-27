@@ -251,74 +251,72 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
       return null;
     }
 
-    // 1. Try ANDROID client for itag 18 (Universal progressive MP4 isommp42 with moov at the front).
-    // This is universally playable across 100% of iOS Safari, Android, and Desktop <audio> elements without DASH/MSE errors.
-    try {
-      const androidRes = await yt.actions.execute('/player', {
-        videoId: cleanId,
-        client: 'ANDROID',
-      });
-      const combinedFormats = androidRes.data?.streamingData?.formats || [];
-      const itag18 = combinedFormats.find((f: any) => f.itag === 18 && f.url);
-      if (itag18?.url) {
-        console.log(`[YT STREAM] Resolved itag 18 (progressive MP4) via ANDROID client for videoId=${cleanId}`);
-        ytStreamUrlCache.set(cleanId, {
-          url: itag18.url,
-          expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+    // Try clients in order: ANDROID_VR, ANDROID, IOS, VISIONOS
+    // ANDROID_VR and ANDROID provide direct unencrypted itag 18 progressive MP4 and audio/mp4
+    const clientsToTry = ['ANDROID_VR', 'ANDROID', 'IOS', 'VISIONOS'];
+
+    for (const clientName of clientsToTry) {
+      try {
+        console.log(`[YT STREAM] Querying YouTube via ${clientName} for videoId=${cleanId}...`);
+        const res = await yt.actions.execute('/player', {
+          videoId: cleanId,
+          client: clientName,
         });
-        return itag18.url;
+
+        const status = res.data?.playabilityStatus?.status;
+        const reason = res.data?.playabilityStatus?.reason;
+        if (status && status !== 'OK') {
+          console.log(`[YT STREAM] ${clientName} playability: ${status} (${reason || 'no reason'})`);
+          continue;
+        }
+
+        const formats = (res.data?.streamingData?.formats || []).concat(res.data?.streamingData?.adaptiveFormats || []);
+        
+        // 1. Check for universal progressive MP4 (itag 18 - isommp42)
+        const itag18 = formats.find((f: any) => f.itag === 18 && f.url);
+        if (itag18?.url) {
+          console.log(`[YT STREAM SUCCESS] Resolved itag 18 progressive MP4 via ${clientName} for videoId=${cleanId}`);
+          ytStreamUrlCache.set(cleanId, {
+            url: itag18.url,
+            expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+          });
+          return itag18.url;
+        }
+
+        // 2. Check for AAC audio/mp4 (universal iOS/Android playback)
+        const mp4Audio = formats.filter((f: any) => f.mimeType?.includes('audio/mp4') && f.url);
+        if (mp4Audio.length > 0) {
+          mp4Audio.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
+          const chosen = mp4Audio[0];
+          console.log(`[YT STREAM SUCCESS] Resolved AAC audio/mp4 (itag ${chosen.itag}) via ${clientName} for videoId=${cleanId}`);
+          ytStreamUrlCache.set(cleanId, {
+            url: chosen.url,
+            expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+          });
+          return chosen.url;
+        }
+
+        // 3. Fallback: any audio with direct URL (e.g. webm)
+        const anyAudio = formats.filter((f: any) => f.mimeType?.includes('audio/') && f.url);
+        if (anyAudio.length > 0) {
+          anyAudio.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
+          const chosen = anyAudio[0];
+          console.log(`[YT STREAM SUCCESS] Resolved audio (itag ${chosen.itag}) via ${clientName} for videoId=${cleanId}`);
+          ytStreamUrlCache.set(cleanId, {
+            url: chosen.url,
+            expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+          });
+          return chosen.url;
+        }
+      } catch (clientErr: any) {
+        console.log(`[YT STREAM] ${clientName} error: ${clientErr?.message || clientErr}`);
       }
-    } catch (androidErr: any) {
-      console.log(`[YT STREAM] ANDROID client attempt error: ${androidErr?.message}`);
-      // Fall through to VISIONOS if ANDROID client fails
     }
 
-    // 2. Fallback: Use VISIONOS client (adaptive formats)
-    const res = await yt.actions.execute('/player', {
-      videoId: cleanId,
-      client: 'VISIONOS',
-    });
-
-    let formats = res.data?.streamingData?.adaptiveFormats || res.data?.streamingData?.formats || [];
-    let audioFormats = formats.filter((f: any) => f.mimeType?.includes('audio/') && f.url);
-
-    // Fallback to ANDROID_VR if VISIONOS has no direct URLs for this video
-    if (audioFormats.length === 0) {
-      const fallbackRes = await yt.actions.execute('/player', {
-        videoId: cleanId,
-        client: 'ANDROID_VR',
-      });
-      formats = fallbackRes.data?.streamingData?.adaptiveFormats || [];
-      audioFormats = formats.filter((f: any) => f.mimeType?.includes('audio/') && f.url);
-    }
-
-    if (audioFormats.length === 0) return null;
-
-    // Prefer audio/mp4 (AAC-LC) because iOS Safari (all iPhones & iPads) cannot play audio/webm (Opus).
-    // audio/mp4 provides universal playback across 100% of iOS, Android, and Desktop browsers.
-    const mp4Formats = audioFormats.filter((f: any) => f.mimeType?.includes('audio/mp4'));
-    const webmFormats = audioFormats.filter((f: any) => f.mimeType?.includes('audio/webm'));
-
-    mp4Formats.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
-    webmFormats.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
-
-    const chosenFormat = mp4Formats[0] || webmFormats[0] || audioFormats[0];
-    const finalUrl = chosenFormat?.url || null;
-
-    if (finalUrl) {
-      console.log(`[YT STREAM] Resolved adaptive format (${chosenFormat?.mimeType}) via VISIONOS for videoId=${cleanId}`);
-      // Cache URL for 3 hours (YouTube stream URLs are valid for 6 hours)
-      ytStreamUrlCache.set(cleanId, {
-        url: finalUrl,
-        expiresAt: Date.now() + 3 * 60 * 60 * 1000,
-      });
-    } else {
-      console.log(`[YT STREAM ERROR] No audio format URL available for videoId=${cleanId}`);
-    }
-
-    return finalUrl;
+    console.log(`[YT STREAM ERROR] All clients exhausted with no direct URLs for videoId=${cleanId}`);
+    return null;
   } catch (err: any) {
-    console.error(`[YT STREAM ERROR] Failed to resolve YouTube stream for ${videoId}:`, err?.message || err);
+    console.log(`[YT STREAM EXCEPTION] Failed for ${videoId}:`, err?.message || err);
     return null;
   }
 }
