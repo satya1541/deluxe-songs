@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
     const transcodeUrl = request.nextUrl.searchParams.get('transcodeUrl');
 
     if (source === 'youtube' && idParam) {
-      targetUrl = await resolveYouTubeStreamUrl(decodeURIComponent(idParam));
+      const cleanId = decodeURIComponent(idParam).replace(/^yt_/, '');
+      targetUrl = await resolveYouTubeStreamUrl(cleanId);
       customUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
     } else if (source === 'soundcloud') {
       const scTarget = transcodeUrl || urlParam;
@@ -88,6 +89,10 @@ export async function GET(request: NextRequest) {
     if (contentRange) {
       responseHeaders.set('Content-Range', contentRange);
     }
+
+    const etag = upstreamRes.headers.get('etag') || `"${source || 'track'}-${(idParam || urlParam || 'stream').slice(0, 32)}"`;
+    responseHeaders.set('ETag', etag);
+    responseHeaders.set('Cache-Control', 'public, max-age=3600');
 
     // Safely wrap upstream stream to handle client disconnects / seeks gracefully
     const bodyStream = new ReadableStream({

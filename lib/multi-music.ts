@@ -222,15 +222,32 @@ export async function searchMultiSource(
   return combined.slice(0, limit);
 }
 
+// In-memory cache for resolved YouTube stream URLs (persists for 3 hours across range requests)
+const ytStreamUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
 // 5. Resolve Live Stream URL for YouTube (Unthrottled VISIONOS & ANDROID_VR formats)
 export async function resolveYouTubeStreamUrl(videoId: string): Promise<string | null> {
   try {
+    if (!videoId) return null;
+
+    // Clean videoId: strip any 'yt_' prefix or URL parameters
+    let cleanId = videoId.trim();
+    if (cleanId.startsWith('yt_')) cleanId = cleanId.slice(3);
+    if (cleanId.includes('v=')) cleanId = cleanId.split('v=')[1]?.split('&')[0] || cleanId;
+    if (cleanId.includes('youtu.be/')) cleanId = cleanId.split('youtu.be/')[1]?.split('?')[0] || cleanId;
+
+    // Check memory cache first - CRUCIAL for mobile Safari / AVPlayer which sends multiple range probes
+    const cached = ytStreamUrlCache.get(cleanId);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.url;
+    }
+
     const yt = await getInnertube();
     if (!yt) return null;
 
     // Use VISIONOS client - provides high-bitrate unthrottled audio (167k Opus / 131k AAC) without SABR/403 blocks
     const res = await yt.actions.execute('/player', {
-      videoId,
+      videoId: cleanId,
       client: 'VISIONOS',
     });
 
@@ -240,7 +257,7 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
     // Fallback to ANDROID_VR if VISIONOS has no direct URLs for this video
     if (audioFormats.length === 0) {
       const fallbackRes = await yt.actions.execute('/player', {
-        videoId,
+        videoId: cleanId,
         client: 'ANDROID_VR',
       });
       formats = fallbackRes.data?.streamingData?.adaptiveFormats || [];
@@ -258,7 +275,17 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
     webmFormats.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
 
     const chosenFormat = mp4Formats[0] || webmFormats[0] || audioFormats[0];
-    return chosenFormat?.url || null;
+    const finalUrl = chosenFormat?.url || null;
+
+    if (finalUrl) {
+      // Cache URL for 3 hours (YouTube stream URLs are valid for 6 hours)
+      ytStreamUrlCache.set(cleanId, {
+        url: finalUrl,
+        expiresAt: Date.now() + 3 * 60 * 60 * 1000,
+      });
+    }
+
+    return finalUrl;
   } catch (err) {
     console.error('Failed to resolve YouTube stream URL:', err);
     return null;

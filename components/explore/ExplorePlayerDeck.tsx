@@ -86,14 +86,17 @@ export default function ExplorePlayerDeck({
     }, 2000);
   }, []);
 
-  // Load and play song when currentSong changes ONLY (NEVER re-triggers on volume change)
+  // Load and play song when currentSong changes ONLY
+  const prevSongIdRef = useRef<string | null>(null);
   useEffect(() => {
     if (!currentSong || !audioRef.current) return;
+    if (prevSongIdRef.current === currentSong.id && audioRef.current.src.includes(currentSong.streamUrl)) return;
+    prevSongIdRef.current = currentSong.id;
+
     const audio = audioRef.current;
     setIsLoadingAudio(true);
     audio.src = currentSong.streamUrl;
     audio.volume = isMutedRef.current ? 0 : volumeRef.current / 100;
-    audio.load();
 
     const playPromise = audio.play();
     if (playPromise !== undefined) {
@@ -107,9 +110,13 @@ export default function ExplorePlayerDeck({
     }
   }, [currentSong?.id, currentSong?.streamUrl]);
 
-  // Handle Play / Pause sync
+  // Handle Play / Pause toggle sync (prevent duplicate concurrent play calls on song change)
+  const prevIsPlayingRef = useRef<boolean>(isPlaying);
   useEffect(() => {
     if (!audioRef.current || !currentSong) return;
+    if (prevIsPlayingRef.current === isPlaying) return;
+    prevIsPlayingRef.current = isPlaying;
+
     if (isPlaying) {
       audioRef.current.play().catch(() => {});
     } else {
