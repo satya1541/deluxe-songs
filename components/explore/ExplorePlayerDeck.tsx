@@ -101,8 +101,7 @@ export default function ExplorePlayerDeck({
         .then(() => {
           setIsLoadingAudio(false);
         })
-        .catch((err) => {
-          console.warn('Autoplay prevented or network error:', err);
+        .catch(() => {
           setIsLoadingAudio(false);
         });
     }
@@ -376,16 +375,13 @@ export default function ExplorePlayerDeck({
       <div className="spotify-bottom-player-bar">
         <audio
           ref={audioRef}
-          crossOrigin="anonymous"
+          playsInline
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onCanPlay={() => setIsLoadingAudio(false)}
           onWaiting={() => setIsLoadingAudio(true)}
           onEnded={handleSongEnded}
-          onError={(e) => {
-            console.error('Audio playback error:', e);
-            setIsLoadingAudio(false);
-          }}
+          onError={() => setIsLoadingAudio(false)}
           preload="auto"
         />
 

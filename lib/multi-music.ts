@@ -144,9 +144,11 @@ export async function searchSoundCloud(query: string, limit = 10): Promise<Explo
     for (const t of tracks) {
       if (!t.title) continue;
 
-      // Find progressive MP3 transcoding (fallback to first transcoding)
+      // Prefer progressive MP3 transcoding; fallback only if valid URL exists
       const transcodings = t.media?.transcodings || [];
-      const progressive = transcodings.find((tc: any) => tc.format?.protocol === 'progressive') || transcodings[0];
+      const progressive = transcodings.find((tc: any) => tc.format?.protocol === 'progressive')
+        || transcodings.find((tc: any) => tc.url && !tc.url.includes('hls'))
+        || transcodings[0];
       if (!progressive?.url) continue;
 
       const id = `sc_${t.id || Buffer.from(t.permalink_url || t.title).toString('base64').replace(/=/g, '')}`;
@@ -247,9 +249,16 @@ export async function resolveYouTubeStreamUrl(videoId: string): Promise<string |
 
     if (audioFormats.length === 0) return null;
 
-    // Pick highest bitrate audio format
-    const best = audioFormats.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0))[0];
-    return best?.url || null;
+    // Prefer audio/mp4 (AAC-LC) because iOS Safari (all iPhones & iPads) cannot play audio/webm (Opus).
+    // audio/mp4 provides universal playback across 100% of iOS, Android, and Desktop browsers.
+    const mp4Formats = audioFormats.filter((f: any) => f.mimeType?.includes('audio/mp4'));
+    const webmFormats = audioFormats.filter((f: any) => f.mimeType?.includes('audio/webm'));
+
+    mp4Formats.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
+    webmFormats.sort((a: any, b: any) => (b.bitrate || 0) - (a.bitrate || 0));
+
+    const chosenFormat = mp4Formats[0] || webmFormats[0] || audioFormats[0];
+    return chosenFormat?.url || null;
   } catch (err) {
     console.error('Failed to resolve YouTube stream URL:', err);
     return null;

@@ -3,6 +3,18 @@ import { resolveYouTubeStreamUrl, resolveSoundCloudStreamUrl } from '@/lib/multi
 
 export const dynamic = 'force-dynamic';
 
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': 'Range, Content-Type, Accept-Encoding',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+}
+
 export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get('source');
   const idParam = request.nextUrl.searchParams.get('id');
@@ -30,12 +42,14 @@ export async function GET(request: NextRequest) {
       return new NextResponse('Stream source not resolvable or missing parameters', { status: 400 });
     }
 
-    // Forward range request headers if present
-    const rangeHeader = request.headers.get('range') || 'bytes=0-';
+    // Forward range request headers only when present (crucial for iOS Safari & Android audio engines)
+    const clientRange = request.headers.get('range');
     const headers: Record<string, string> = {
       'User-Agent': customUserAgent,
-      'Range': rangeHeader,
     };
+    if (clientRange) {
+      headers['Range'] = clientRange;
+    }
 
     const abortController = new AbortController();
     if (request.signal) {
@@ -56,7 +70,11 @@ export async function GET(request: NextRequest) {
     }
 
     const responseHeaders = new Headers();
-    responseHeaders.set('Content-Type', upstreamRes.headers.get('content-type') || 'audio/mp4');
+    let rawType = upstreamRes.headers.get('content-type') || 'audio/mp4';
+    if (rawType.includes('video/mp4') || rawType.includes('application/octet-stream')) {
+      rawType = 'audio/mp4';
+    }
+    responseHeaders.set('Content-Type', rawType);
     responseHeaders.set('Access-Control-Allow-Origin', '*');
     responseHeaders.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     responseHeaders.set('Accept-Ranges', 'bytes');
