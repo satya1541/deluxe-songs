@@ -10,7 +10,10 @@ async function getInnertube() {
     try {
       // Dynamic import to support ESM package in Next.js
       const { Innertube } = await import('youtubei.js');
-      innertubeInstance = await Innertube.create();
+      innertubeInstance = await Innertube.create({
+        // Pass cache: 'no-store' to bypass Next.js 2MB fetch cache limit on YouTube player JS
+        fetch: ((input: any, init?: any) => fetch(input, { ...init, cache: 'no-store' })) as any,
+      });
     } catch (err) {
       console.error('Failed to initialize Innertube:', err);
     }

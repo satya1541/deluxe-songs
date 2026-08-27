@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['music-metadata', 'strtok3', 'file-type'],
+    serverComponentsExternalPackages: ['music-metadata', 'strtok3', 'file-type', 'youtubei.js'],
   },
   images: {
     remotePatterns: [
