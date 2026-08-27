@@ -5,6 +5,7 @@ import { s3Client, BUCKET_NAME, PREFIX } from '@/lib/s3';
 import { Song } from '@/types/music';
 import path from 'path';
 import { cleanTitle, cleanArtist } from '@/lib/text-cleaner';
+import { ensureSongMetadata, dynamicMetadataMap } from '@/lib/song-scanner';
 
 const FALLBACK_COVERS = [
   'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=300&auto=format&fit=crop&q=80',
@@ -64,10 +65,10 @@ export async function GET() {
       audioFiles.map(async (file, index) => {
         // file.Key is like "Music/song.mp3"
         const fileName = path.basename(file.Key!);
-        const fallback = parseFilename(fileName);
-        
-        let name = cleanTitle(fallback.name) || fileName.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
-        let artist = cleanArtist(fallback.artist);
+        const meta = await ensureSongMetadata(fileName, file.Key);
+
+        const name = meta.title || fileName.replace(/\.(mp3|wav|m4a|ogg|flac|aac)$/i, '');
+        const artist = meta.artist || 'Unknown Artist';
         
         // Pass index to cover route so it can fallback to the correct default image
         let cover = `/api/cover/${encodeURIComponent(fileName)}?fallbackIndex=${index % FALLBACK_COVERS.length}`;

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client, BUCKET_NAME, PREFIX } from '@/lib/s3';
 import path from 'path';
+import { registerUploadedSong } from '@/lib/song-scanner';
 
 // Allowed audio extension
 const ALLOWED_EXTENSION = '.mp3';
@@ -72,6 +73,9 @@ export async function POST(request: Request) {
     const uploadedResults: {
       originalName: string;
       savedName: string;
+      title?: string;
+      artist?: string;
+      duration?: number;
       size: number;
       url: string;
     }[] = [];
@@ -130,9 +134,15 @@ export async function POST(request: Request) {
 
         await s3Client.send(command);
 
+        // Auto-extract ID3 tags and duration for the newly uploaded song
+        const meta = await registerUploadedSong(uniqueName, buffer);
+
         uploadedResults.push({
           originalName,
           savedName: uniqueName,
+          title: meta.title,
+          artist: meta.artist,
+          duration: meta.duration,
           size: file.size,
           url: `/api/music/${encodeURIComponent(uniqueName)}`,
         });

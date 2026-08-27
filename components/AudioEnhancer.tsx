@@ -11,37 +11,39 @@ interface AudioEnhancerProps {
   engine: AudioEngineControls;
   isOpen: boolean;
   onClose: () => void;
-  aiSmartEq: boolean;
-  onToggleAiSmartEq: () => void;
+  aiSmartEq?: boolean;
+  onToggleAiSmartEq?: () => void;
   activeProfile?: AIAcousticProfile | null;
+  hideAi?: boolean;
 }
 
 export default function AudioEnhancer({
   engine,
   isOpen,
   onClose,
-  aiSmartEq,
+  aiSmartEq = false,
   onToggleAiSmartEq,
   activeProfile,
+  hideAi = false,
 }: AudioEnhancerProps) {
   const { state } = engine;
 
   const handleSelectPreset = (name: string) => {
-    if (aiSmartEq) {
+    if (aiSmartEq && onToggleAiSmartEq) {
       onToggleAiSmartEq();
     }
     engine.setPreset(name);
   };
 
   const handleSetEqBand = (bandIndex: number, gain: number) => {
-    if (aiSmartEq) {
+    if (aiSmartEq && onToggleAiSmartEq) {
       onToggleAiSmartEq();
     }
     engine.setEqBand(bandIndex, gain);
   };
 
   const handleResetAll = () => {
-    if (aiSmartEq) {
+    if (aiSmartEq && onToggleAiSmartEq) {
       onToggleAiSmartEq();
     }
     engine.resetToFlat();
@@ -95,102 +97,104 @@ export default function AudioEnhancer({
         {/* Scrollable content */}
         <div className="enhancer-content">
           {/* === AI SMART ACOUSTICS (AUTO SPATIAL AUDIO) === */}
-          <div className={`ai-smart-eq-card ${aiSmartEq ? 'ai-smart-eq-active' : ''}`}>
-            <div className="ai-smart-eq-header">
-              <div className="ai-smart-eq-title-wrap">
-                <div className="ai-sparkle-icon">✨</div>
-                <div>
-                  <div className="ai-smart-eq-title">
-                    <span>AI Smart Acoustics</span>
-                    <span className="ai-smart-eq-badge">{aiSmartEq ? 'AUTO OPTIMIZED' : 'OFF'}</span>
+          {!hideAi && (
+            <div className={`ai-smart-eq-card ${aiSmartEq ? 'ai-smart-eq-active' : ''}`}>
+              <div className="ai-smart-eq-header">
+                <div className="ai-smart-eq-title-wrap">
+                  <div className="ai-sparkle-icon">✨</div>
+                  <div>
+                    <div className="ai-smart-eq-title">
+                      <span>AI Smart Acoustics</span>
+                      <span className="ai-smart-eq-badge">{aiSmartEq ? 'AUTO OPTIMIZED' : 'OFF'}</span>
+                    </div>
+                    <p className="ai-smart-eq-subtitle">
+                      Auto-tunes sound & 3D spatial room to match the song vibe
+                    </p>
                   </div>
-                  <p className="ai-smart-eq-subtitle">
-                    Auto-tunes sound & 3D spatial room to match the song vibe
-                  </p>
                 </div>
+
+                <button
+                  type="button"
+                  className={`toggle-switch ${aiSmartEq ? 'toggle-on' : ''}`}
+                  onClick={onToggleAiSmartEq}
+                  role="switch"
+                  aria-checked={aiSmartEq}
+                  aria-label="Toggle AI Smart Acoustics"
+                >
+                  <div className="toggle-knob" />
+                </button>
               </div>
 
-              <button
-                type="button"
-                className={`toggle-switch ${aiSmartEq ? 'toggle-on' : ''}`}
-                onClick={onToggleAiSmartEq}
-                role="switch"
-                aria-checked={aiSmartEq}
-                aria-label="Toggle AI Smart Acoustics"
-              >
-                <div className="toggle-knob" />
-              </button>
+              {aiSmartEq && activeProfile && (
+                <div className="ai-profile-live-box">
+                  <div className="ai-profile-meta">
+                    <div className="ai-headphone-stage">
+                      <span className="ai-profile-icon">{activeProfile.icon}</span>
+                      <div className="stage-ring ring-1" />
+                      <div className="stage-ring ring-2" />
+                    </div>
+                    <div className="ai-profile-info">
+                      <span className="ai-profile-name">{activeProfile.name}</span>
+                      <span className="ai-profile-tagline">{activeProfile.tagline}</span>
+                    </div>
+                  </div>
+
+                  {/* Live Section & Intent Telemetry */}
+                  <div className="ai-intent-grid">
+                    <div className="ai-intent-gauge">
+                      <span className="ai-intent-label">Warmth</span>
+                      <div className="ai-intent-bar">
+                        <div
+                          className="ai-intent-fill"
+                          style={{ width: `${Math.round((activeProfile.intent?.warmth ?? 0.7) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="ai-intent-gauge">
+                      <span className="ai-intent-label">Space</span>
+                      <div className="ai-intent-bar">
+                        <div
+                          className="ai-intent-fill"
+                          style={{ width: `${Math.round((activeProfile.intent?.space ?? 0.7) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="ai-intent-gauge">
+                      <span className="ai-intent-label">Vocals</span>
+                      <div className="ai-intent-bar">
+                        <div
+                          className="ai-intent-fill"
+                          style={{ width: `${Math.round((activeProfile.intent?.vocalPresence ?? 0.8) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="ai-intent-gauge">
+                      <span className="ai-intent-label">Sub-Bass</span>
+                      <div className="ai-intent-bar">
+                        <div
+                          className="ai-intent-fill"
+                          style={{ width: `${Math.round((activeProfile.intent?.subBassDepth ?? 0.7) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="ai-profile-chips">
+                    <span className="ai-chip">Bass +{activeProfile.bassBoost}dB</span>
+                    <span className="ai-chip">
+                      {activeProfile.reverbEnabled ? `Spatial 3D Audio` : 'Studio Clarity'}
+                    </span>
+                    <span className="ai-chip">
+                      {activeProfile.loudnessEnabled ? 'Dynamic Punch' : 'Natural Vocals'}
+                    </span>
+                    <span className="ai-chip ai-chip-section">
+                      ✨ Adaptive 60 FPS
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-
-            {aiSmartEq && activeProfile && (
-              <div className="ai-profile-live-box">
-                <div className="ai-profile-meta">
-                  <div className="ai-headphone-stage">
-                    <span className="ai-profile-icon">{activeProfile.icon}</span>
-                    <div className="stage-ring ring-1" />
-                    <div className="stage-ring ring-2" />
-                  </div>
-                  <div className="ai-profile-info">
-                    <span className="ai-profile-name">{activeProfile.name}</span>
-                    <span className="ai-profile-tagline">{activeProfile.tagline}</span>
-                  </div>
-                </div>
-
-                {/* Live Section & Intent Telemetry */}
-                <div className="ai-intent-grid">
-                  <div className="ai-intent-gauge">
-                    <span className="ai-intent-label">Warmth</span>
-                    <div className="ai-intent-bar">
-                      <div
-                        className="ai-intent-fill"
-                        style={{ width: `${Math.round((activeProfile.intent?.warmth ?? 0.7) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="ai-intent-gauge">
-                    <span className="ai-intent-label">Space</span>
-                    <div className="ai-intent-bar">
-                      <div
-                        className="ai-intent-fill"
-                        style={{ width: `${Math.round((activeProfile.intent?.space ?? 0.7) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="ai-intent-gauge">
-                    <span className="ai-intent-label">Vocals</span>
-                    <div className="ai-intent-bar">
-                      <div
-                        className="ai-intent-fill"
-                        style={{ width: `${Math.round((activeProfile.intent?.vocalPresence ?? 0.8) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                  <div className="ai-intent-gauge">
-                    <span className="ai-intent-label">Sub-Bass</span>
-                    <div className="ai-intent-bar">
-                      <div
-                        className="ai-intent-fill"
-                        style={{ width: `${Math.round((activeProfile.intent?.subBassDepth ?? 0.7) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ai-profile-chips">
-                  <span className="ai-chip">Bass +{activeProfile.bassBoost}dB</span>
-                  <span className="ai-chip">
-                    {activeProfile.reverbEnabled ? `Spatial 3D Audio` : 'Studio Clarity'}
-                  </span>
-                  <span className="ai-chip">
-                    {activeProfile.loudnessEnabled ? 'Dynamic Punch' : 'Natural Vocals'}
-                  </span>
-                  <span className="ai-chip ai-chip-section">
-                    ✨ Adaptive 60 FPS
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* === EQ Presets === */}
           <div className="enhancer-section">

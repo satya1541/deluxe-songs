@@ -323,7 +323,6 @@ export async function POST(request: Request) {
     const s3Key = `Music/Emotions/${sanitizedFileName}.json`;
 
     if (emotionCache.has(cacheKey)) {
-      console.log('Serving emotion from memory cache:', cacheKey);
       return NextResponse.json(emotionCache.get(cacheKey));
     }
 
@@ -337,7 +336,6 @@ export async function POST(request: Request) {
       if (s3Response.Body) {
         const jsonStr = await s3Response.Body.transformToString();
         const cachedResult: EmotionResult = JSON.parse(jsonStr);
-        console.log('Serving emotion from S3 cache:', s3Key);
         emotionCache.set(cacheKey, cachedResult);
         return NextResponse.json(cachedResult);
       }
@@ -495,7 +493,6 @@ Return ONLY valid JSON without markdown formatting in this exact format:
         ContentType: 'application/json',
       });
       await s3Client.send(putCommand);
-      console.log('Saved emotion to S3 cache:', s3Key);
     } catch (e) {
       console.error('Failed to save emotion to S3:', e);
     }

@@ -417,7 +417,6 @@ async function handleLyricsRequest(rawTrack: string, rawArtist: string, duration
   if (!forceRefresh && lyricsMemoryCache.has(cacheKey)) {
     const cached = lyricsMemoryCache.get(cacheKey)!;
     if (cached.synced && cached.lines.length >= 4) {
-      console.log('Serving verified synced lyrics from memory cache:', cacheKey);
       return NextResponse.json(cached);
     }
     cachedFallback = cached;
@@ -434,7 +433,6 @@ async function handleLyricsRequest(rawTrack: string, rawArtist: string, duration
       const jsonStr = await s3Response.Body.transformToString();
       const cachedData: LyricsData = JSON.parse(jsonStr);
       if (cachedData.synced && cachedData.lines && cachedData.lines.length >= 4) {
-        console.log('Serving verified synced lyrics from S3 cache:', s3Key);
         lyricsMemoryCache.set(cacheKey, cachedData);
         return NextResponse.json({ ...cachedData, source: 's3_cache' });
       }
@@ -481,7 +479,6 @@ async function handleLyricsRequest(rawTrack: string, rawArtist: string, duration
         ContentType: 'application/json',
       });
       await s3Client.send(putCommand);
-      console.log(`Saved lyrics to S3 cache (${lyricsResult.source}):`, s3Key);
     } catch (e: any) {
       console.error('Failed to write lyrics to S3 cache:', e.message);
     }
