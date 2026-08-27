@@ -10,12 +10,23 @@ async function getInnertube() {
     try {
       // Dynamic import to support ESM package in Next.js
       const { Innertube } = await import('youtubei.js');
+      const cookie = process.env.YOUTUBE_COOKIE || undefined;
+      const po_token = process.env.YOUTUBE_PO_TOKEN || undefined;
+      const visitor_data = process.env.YOUTUBE_VISITOR_DATA || undefined;
+
+      if (cookie) {
+        console.log('[YT INNERTUBE] Initializing with authenticated YOUTUBE_COOKIE');
+      }
+
       innertubeInstance = await Innertube.create({
+        cookie,
+        po_token,
+        visitor_data,
         // Pass cache: 'no-store' to bypass Next.js 2MB fetch cache limit on YouTube player JS
         fetch: ((input: any, init?: any) => fetch(input, { ...init, cache: 'no-store' })) as any,
       });
     } catch (err) {
-      console.error('Failed to initialize Innertube:', err);
+      console.log('Failed to initialize Innertube:', err);
     }
   }
   return innertubeInstance;
@@ -112,7 +123,7 @@ export async function searchYouTubeMusic(query: string, limit = 12): Promise<Exp
         album,
         duration: durationSeconds,
         cover,
-        streamUrl: `/api/explore/stream?source=youtube&id=${encodeURIComponent(id)}`,
+        streamUrl: `/api/explore/stream?source=youtube&id=${encodeURIComponent(id)}&title=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}`,
         quality: '160kbps',
         source: 'youtube',
         sourceBadge: SOURCE_BADGES.youtube,
