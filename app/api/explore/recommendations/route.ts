@@ -14,6 +14,8 @@ import { s3Client, BUCKET_NAME } from '@/lib/s3';
 // In-memory cache for ultra-fast <5ms lookups
 const recommendationCache = new Map<string, { songs: ExploreSong[]; emotion: any }>();
 
+export const dynamic = 'force-dynamic';
+
 const PLATFORMS: AudioSourcePlatform[] = ['jiosaavn', 'youtube', 'soundcloud'];
 
 // Normalize song title to prevent duplicate tracks and compilation repacks

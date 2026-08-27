@@ -6,6 +6,8 @@ import { LyricLine, LyricsData } from '@/types/lyrics';
 // In-memory runtime cache
 const lyricsMemoryCache = new Map<string, LyricsData>();
 
+export const dynamic = 'force-dynamic';
+
 function cleanMetadataString(str: string): string {
   if (!str) return '';
   return str

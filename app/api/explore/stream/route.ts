@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveYouTubeStreamUrl, resolveSoundCloudStreamUrl } from '@/lib/multi-music';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const source = request.nextUrl.searchParams.get('source');
   const idParam = request.nextUrl.searchParams.get('id');

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client, BUCKET_NAME } from '@/lib/s3';
 
+export const dynamic = 'force-dynamic';
+
 export type EmotionType =
   | 'sad_romantic'           // 🌧️ General melancholy, sadness, separation & sorrowful love
   | 'heartbroken_romantic'     // 💔 Devastating breakup, love lost & emotional damage
