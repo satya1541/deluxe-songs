@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import {
   AudioEngineControls,
   EQ_PRESETS,
@@ -24,9 +25,11 @@ export default function AudioEnhancer({
   aiSmartEq = false,
   onToggleAiSmartEq,
   activeProfile,
-  hideAi = false,
+  hideAi = true,
 }: AudioEnhancerProps) {
   const { state } = engine;
+
+  if (!isOpen) return null;
 
   const handleSelectPreset = (name: string) => {
     if (aiSmartEq && onToggleAiSmartEq) {
@@ -50,323 +53,202 @@ export default function AudioEnhancer({
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      {isOpen && <div className="enhancer-backdrop" onClick={onClose} />}
-
-      {/* Panel */}
-      <div className={`enhancer-panel ${isOpen ? 'enhancer-open' : ''}`}>
-        {/* Drag handle */}
-        <div className="enhancer-handle-bar">
-          <div className="enhancer-handle" />
-        </div>
-
+    <div className="deluxe-eq-overlay" onClick={onClose}>
+      <div
+        className="deluxe-eq-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label="Equalizer and Sound Studio"
+      >
         {/* Header */}
-        <div className="enhancer-header">
-          <div className="enhancer-title-row">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="21" x2="4" y2="14" />
-              <line x1="4" y1="10" x2="4" y2="3" />
-              <line x1="12" y1="21" x2="12" y2="12" />
-              <line x1="12" y1="8" x2="12" y2="3" />
-              <line x1="20" y1="21" x2="20" y2="16" />
-              <line x1="20" y1="12" x2="20" y2="3" />
-              <circle cx="4" cy="12" r="2" fill="currentColor" />
-              <circle cx="12" cy="10" r="2" fill="currentColor" />
-              <circle cx="20" cy="14" r="2" fill="currentColor" />
-            </svg>
-            <h3>Audio Enhancer</h3>
+        <div className="deluxe-eq-header">
+          <div className="deluxe-eq-title-wrap">
+            <div className="deluxe-eq-icon-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="2" y="14" width="4" height="8" rx="1" />
+                <rect x="10" y="6" width="4" height="16" rx="1" />
+                <rect x="18" y="10" width="4" height="12" rx="1" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="deluxe-eq-title">Sound Studio</h3>
+              <p className="deluxe-eq-subtitle">5-Band Equalizer & Acoustic DSP Engine</p>
+            </div>
           </div>
-          <div className="enhancer-header-actions">
+
+          <div className="deluxe-eq-actions">
             <button
               type="button"
-              className="enhancer-reset-btn"
+              className="deluxe-eq-reset-btn"
               onClick={handleResetAll}
-              title="Reset All EQ & Effects to Flat (0dB)"
+              title="Reset all EQ bands to 0dB Flat"
             >
-              Reset
+              Reset Flat
             </button>
-            <button className="enhancer-close-btn" onClick={onClose} aria-label="Close enhancer">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-              </svg>
+            <button
+              type="button"
+              className="deluxe-eq-close-btn"
+              onClick={onClose}
+              aria-label="Close Equalizer"
+            >
+              ✕
             </button>
           </div>
         </div>
 
-        {/* Scrollable content */}
-        <div className="enhancer-content">
-          {/* === AI SMART ACOUSTICS (AUTO SPATIAL AUDIO) === */}
-          {!hideAi && (
-            <div className={`ai-smart-eq-card ${aiSmartEq ? 'ai-smart-eq-active' : ''}`}>
-              <div className="ai-smart-eq-header">
-                <div className="ai-smart-eq-title-wrap">
-                  <div className="ai-sparkle-icon">✨</div>
-                  <div>
-                    <div className="ai-smart-eq-title">
-                      <span>AI Smart Acoustics</span>
-                      <span className="ai-smart-eq-badge">{aiSmartEq ? 'AUTO OPTIMIZED' : 'OFF'}</span>
-                    </div>
-                    <p className="ai-smart-eq-subtitle">
-                      Auto-tunes sound & 3D spatial room to match the song vibe
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className={`toggle-switch ${aiSmartEq ? 'toggle-on' : ''}`}
-                  onClick={onToggleAiSmartEq}
-                  role="switch"
-                  aria-checked={aiSmartEq}
-                  aria-label="Toggle AI Smart Acoustics"
-                >
-                  <div className="toggle-knob" />
-                </button>
-              </div>
-
-              {aiSmartEq && activeProfile && (
-                <div className="ai-profile-live-box">
-                  <div className="ai-profile-meta">
-                    <div className="ai-headphone-stage">
-                      <span className="ai-profile-icon">{activeProfile.icon}</span>
-                      <div className="stage-ring ring-1" />
-                      <div className="stage-ring ring-2" />
-                    </div>
-                    <div className="ai-profile-info">
-                      <span className="ai-profile-name">{activeProfile.name}</span>
-                      <span className="ai-profile-tagline">{activeProfile.tagline}</span>
-                    </div>
-                  </div>
-
-                  {/* Live Section & Intent Telemetry */}
-                  <div className="ai-intent-grid">
-                    <div className="ai-intent-gauge">
-                      <span className="ai-intent-label">Warmth</span>
-                      <div className="ai-intent-bar">
-                        <div
-                          className="ai-intent-fill"
-                          style={{ width: `${Math.round((activeProfile.intent?.warmth ?? 0.7) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="ai-intent-gauge">
-                      <span className="ai-intent-label">Space</span>
-                      <div className="ai-intent-bar">
-                        <div
-                          className="ai-intent-fill"
-                          style={{ width: `${Math.round((activeProfile.intent?.space ?? 0.7) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="ai-intent-gauge">
-                      <span className="ai-intent-label">Vocals</span>
-                      <div className="ai-intent-bar">
-                        <div
-                          className="ai-intent-fill"
-                          style={{ width: `${Math.round((activeProfile.intent?.vocalPresence ?? 0.8) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="ai-intent-gauge">
-                      <span className="ai-intent-label">Sub-Bass</span>
-                      <div className="ai-intent-bar">
-                        <div
-                          className="ai-intent-fill"
-                          style={{ width: `${Math.round((activeProfile.intent?.subBassDepth ?? 0.7) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="ai-profile-chips">
-                    <span className="ai-chip">Bass +{activeProfile.bassBoost}dB</span>
-                    <span className="ai-chip">
-                      {activeProfile.reverbEnabled ? `Spatial 3D Audio` : 'Studio Clarity'}
-                    </span>
-                    <span className="ai-chip">
-                      {activeProfile.loudnessEnabled ? 'Dynamic Punch' : 'Natural Vocals'}
-                    </span>
-                    <span className="ai-chip ai-chip-section">
-                      ✨ Adaptive 60 FPS
-                    </span>
-                  </div>
-                </div>
-              )}
+        {/* Modal Body */}
+        <div className="deluxe-eq-body">
+          {/* Presets Grid */}
+          <div className="deluxe-eq-section">
+            <div className="deluxe-eq-section-header">
+              <span className="deluxe-eq-section-label">Acoustic Presets</span>
+              <span className="deluxe-eq-active-badge">{state.activePreset}</span>
             </div>
-          )}
-
-          {/* === EQ Presets === */}
-          <div className="enhancer-section">
-            <div className="section-label-row">
-              <label className="section-label">EQ Presets</label>
-              {aiSmartEq && <span className="section-subhint">(Selecting will switch to Manual Mode)</span>}
-            </div>
-            <div className="preset-grid">
-              {EQ_PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  className={`preset-pill ${state.activePreset === preset.name ? 'preset-active' : ''}`}
-                  onClick={() => handleSelectPreset(preset.name)}
-                >
-                  <span className="preset-icon">{preset.icon}</span>
-                  <span className="preset-name">{preset.name}</span>
-                </button>
-              ))}
+            <div className="deluxe-eq-preset-grid">
+              {EQ_PRESETS.map((preset) => {
+                const isActive = state.activePreset === preset.name;
+                return (
+                  <button
+                    key={preset.name}
+                    type="button"
+                    className={`deluxe-eq-preset-pill ${isActive ? 'active' : ''}`}
+                    onClick={() => handleSelectPreset(preset.name)}
+                  >
+                    <span className="preset-pill-icon">{preset.icon}</span>
+                    <span className="preset-pill-name">{preset.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* === 5-Band EQ Sliders === */}
-          <div className="enhancer-section">
-            <label className="section-label">Equalizer</label>
-            <div className="eq-sliders">
-              {EQ_BAND_LABELS.map((label, i) => (
-                <div key={label} className="eq-band">
-                  <span className="eq-value">{state.eqGains[i] > 0 ? '+' : ''}{state.eqGains[i]}dB</span>
-                  <div className="eq-slider-track">
+          {/* 5-Band Equalizer Sliders */}
+          <div className="deluxe-eq-section">
+            <div className="deluxe-eq-section-header">
+              <span className="deluxe-eq-section-label">5-Band Frequency Response</span>
+              <span className="deluxe-eq-hint">±12 dB Range</span>
+            </div>
+
+            <div className="deluxe-eq-sliders-card">
+              <div className="deluxe-eq-sliders-container">
+                {EQ_BAND_LABELS.map((label, i) => {
+                  const gain = state.eqGains[i] || 0;
+                  const isPositive = gain > 0;
+                  const isZero = gain === 0;
+
+                  return (
+                    <div key={label} className="deluxe-eq-band-col">
+                      <span className={`deluxe-eq-gain-label ${isPositive ? 'positive' : isZero ? 'zero' : 'negative'}`}>
+                        {isPositive ? `+${gain}` : gain} dB
+                      </span>
+
+                      <div className="deluxe-eq-slider-well">
+                        {/* 0dB Center reference line */}
+                        <div className="deluxe-eq-center-detent" />
+                        <input
+                          type="range"
+                          min="-12"
+                          max="12"
+                          step="1"
+                          value={gain}
+                          onChange={(e) => handleSetEqBand(i, parseInt(e.target.value, 10))}
+                          className="deluxe-eq-vertical-range"
+                          aria-label={label}
+                        />
+                      </div>
+
+                      <span className="deluxe-eq-freq-label">{label.split(' ')[0]}</span>
+                      <span className="deluxe-eq-freq-sub">{label.match(/\((.*?)\)/)?.[1] || ''}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* DSP Enhancements Section */}
+          <div className="deluxe-eq-section">
+            <span className="deluxe-eq-section-label">Acoustic Enhancements</span>
+
+            <div className="deluxe-eq-dsp-grid">
+              {/* Bass Boost Card */}
+              <div className={`deluxe-eq-dsp-card ${state.bassBoost > 0 ? 'active' : ''}`}>
+                <div className="deluxe-eq-dsp-top">
+                  <div className="deluxe-eq-dsp-icon">🔊</div>
+                  <div className="deluxe-eq-dsp-info">
+                    <span className="deluxe-eq-dsp-name">Sub Bass Boost</span>
+                    <span className="deluxe-eq-dsp-desc">Deep 100Hz punch & low-end weight</span>
+                  </div>
+                  <span className="deluxe-eq-dsp-val">+{state.bassBoost} dB</span>
+                </div>
+                <div className="deluxe-eq-slider-row">
+                  <input
+                    type="range"
+                    min="0"
+                    max="15"
+                    step="1"
+                    value={state.bassBoost}
+                    onChange={(e) => engine.setBassBoost(parseInt(e.target.value, 10))}
+                    className="deluxe-eq-horizontal-range"
+                  />
+                </div>
+              </div>
+
+              {/* 3D Spatial Reverb Card */}
+              <div className={`deluxe-eq-dsp-card ${state.reverbEnabled ? 'active' : ''}`}>
+                <div className="deluxe-eq-dsp-top">
+                  <div className="deluxe-eq-dsp-icon">🌌</div>
+                  <div className="deluxe-eq-dsp-info">
+                    <span className="deluxe-eq-dsp-name">3D Spatial Reverb</span>
+                    <span className="deluxe-eq-dsp-desc">Concert hall acoustics & binaural width</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`deluxe-eq-switch ${state.reverbEnabled ? 'on' : ''}`}
+                    onClick={engine.toggleReverb}
+                    aria-label="Toggle Reverb"
+                  >
+                    <div className="deluxe-eq-switch-knob" />
+                  </button>
+                </div>
+                {state.reverbEnabled && (
+                  <div className="deluxe-eq-slider-row">
+                    <span className="deluxe-eq-sub-label">Mix: {state.reverbMix}%</span>
                     <input
                       type="range"
-                      min="-12"
-                      max="12"
-                      step="1"
-                      value={state.eqGains[i]}
-                      onChange={(e) => handleSetEqBand(i, parseInt(e.target.value))}
-                      className="eq-range-input"
+                      min="5"
+                      max="80"
+                      step="5"
+                      value={state.reverbMix}
+                      onChange={(e) => engine.setReverbMix(parseInt(e.target.value, 10))}
+                      className="deluxe-eq-horizontal-range"
                     />
                   </div>
-                  <span className="eq-label">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* === Toggle Controls === */}
-          <div className="enhancer-section">
-            <label className="section-label">Audio Enhancements</label>
-            <div className="toggle-group">
-              {/* Mono Audio */}
-              <div className="toggle-row">
-                <div className="toggle-info">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" opacity="0.7">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM8 11a4 4 0 0 0 8 0h2a6 6 0 0 1-5 5.917V20h3v2H8v-2h3v-3.083A6 6 0 0 1 6 11h2z" />
-                  </svg>
-                  <span>Mono Audio</span>
-                </div>
-                <button
-                  className={`toggle-switch ${state.isMono ? 'toggle-on' : ''}`}
-                  onClick={engine.toggleMono}
-                  role="switch"
-                  aria-checked={state.isMono}
-                >
-                  <div className="toggle-knob" />
-                </button>
+                )}
               </div>
 
-              {/* Reverb */}
-              <div className="toggle-row">
-                <div className="toggle-info">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" opacity="0.7">
-                    <path d="M2 12A10 10 0 0 0 12 22a10 10 0 0 0 0-20A10 10 0 0 0 2 12zm2 0a8 8 0 0 1 8-8v1a7 7 0 0 0 0 14v1a8 8 0 0 1-8-8zm4 0a4 4 0 0 0 4 4v1a5 5 0 0 1 0-10v1a4 4 0 0 0-4 4zm4-1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
-                  </svg>
-                  <span>Reverb</span>
+              {/* Loudness Enhancer Card */}
+              <div className={`deluxe-eq-dsp-card ${state.loudnessEnabled ? 'active' : ''}`}>
+                <div className="deluxe-eq-dsp-top">
+                  <div className="deluxe-eq-dsp-icon">⚡</div>
+                  <div className="deluxe-eq-dsp-info">
+                    <span className="deluxe-eq-dsp-name">Dynamic Punch</span>
+                    <span className="deluxe-eq-dsp-desc">Studio compressor for tight, clear dynamics</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`deluxe-eq-switch ${state.loudnessEnabled ? 'on' : ''}`}
+                    onClick={engine.toggleLoudness}
+                    aria-label="Toggle Dynamic Punch"
+                  >
+                    <div className="deluxe-eq-switch-knob" />
+                  </button>
                 </div>
-                <button
-                  className={`toggle-switch ${state.reverbEnabled ? 'toggle-on' : ''}`}
-                  onClick={engine.toggleReverb}
-                  role="switch"
-                  aria-checked={state.reverbEnabled}
-                >
-                  <div className="toggle-knob" />
-                </button>
               </div>
-
-              {/* Loudness */}
-              <div className="toggle-row">
-                <div className="toggle-info">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" opacity="0.7">
-                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-                  </svg>
-                  <span>Loudness Enhancer</span>
-                </div>
-                <button
-                  className={`toggle-switch ${state.loudnessEnabled ? 'toggle-on' : ''}`}
-                  onClick={engine.toggleLoudness}
-                  role="switch"
-                  aria-checked={state.loudnessEnabled}
-                >
-                  <div className="toggle-knob" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* === Sliders === */}
-          <div className="enhancer-section">
-            <label className="section-label">Controls</label>
-
-            {/* Bass Boost */}
-            <div className="slider-row">
-              <span className="slider-label">Bass Boost</span>
-              <input
-                type="range"
-                min="0"
-                max="15"
-                step="1"
-                value={state.bassBoost}
-                onChange={(e) => engine.setBassBoost(parseInt(e.target.value))}
-                className="enhancer-range"
-              />
-              <span className="slider-value">{state.bassBoost > 0 ? `+${state.bassBoost}` : state.bassBoost}dB</span>
-            </div>
-
-            {/* Reverb Mix */}
-            <div className={`slider-row ${!state.reverbEnabled ? 'slider-disabled' : ''}`}>
-              <span className="slider-label">Reverb Mix</span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={state.reverbMix}
-                onChange={(e) => engine.setReverbMix(parseInt(e.target.value))}
-                className="enhancer-range"
-                disabled={!state.reverbEnabled}
-              />
-              <span className="slider-value">{state.reverbMix}%</span>
-            </div>
-
-            {/* Volume */}
-            <div className="slider-row">
-              <span className="slider-label">Volume</span>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-                value={state.volume}
-                onChange={(e) => engine.setVolume(parseInt(e.target.value))}
-                className="enhancer-range"
-              />
-              <span className="slider-value">{state.volume}%</span>
-            </div>
-
-            {/* Speed */}
-            <div className="slider-row">
-              <span className="slider-label">Speed</span>
-              <input
-                type="range"
-                min="0.5"
-                max="2.0"
-                step="0.1"
-                value={state.speed}
-                onChange={(e) => engine.setSpeed(parseFloat(e.target.value))}
-                className="enhancer-range"
-              />
-              <span className="slider-value">{state.speed.toFixed(1)}x</span>
             </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

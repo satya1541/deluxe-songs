@@ -4,7 +4,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ExploreSong } from '@/types/explore';
 import { useAudioEngine } from '@/hooks/useAudioEngine';
 import AudioEnhancer from '@/components/AudioEnhancer';
-import { EmotionData } from '@/lib/emotions';
+import SongArtwork from '@/components/explore/SongArtwork';
+import ImmersivePlayer from '@/components/explore/ImmersivePlayer';
+import SourceQualityBadge from '@/components/explore/SourceQualityBadge';
+import { motion, AnimatePresence } from 'motion/react';
+import { cn } from '@/lib/utils';
+import { Play, Pause, SkipBack, SkipForward, SlidersHorizontal, Playlist, X } from '@phosphor-icons/react';
 
 interface ExplorePlayerDeckProps {
   currentSong: ExploreSong | null;
@@ -15,10 +20,8 @@ interface ExplorePlayerDeckProps {
   hasNext?: boolean;
   hasPrev?: boolean;
   upcomingQueue?: ExploreSong[];
-  activeEmotionData?: EmotionData | null;
+  historyStack?: ExploreSong[];
   onSelectFromQueue?: (song: ExploreSong) => void;
-  aiRecEnabled?: boolean;
-  onToggleAiRec?: () => void;
   onClose?: () => void;
 }
 
@@ -31,10 +34,8 @@ export default function ExplorePlayerDeck({
   hasNext = false,
   hasPrev = false,
   upcomingQueue = [],
-  activeEmotionData,
+  historyStack = [],
   onSelectFromQueue,
-  aiRecEnabled = false,
-  onToggleAiRec,
   onClose,
 }: ExplorePlayerDeckProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -49,7 +50,7 @@ export default function ExplorePlayerDeck({
         if (parsed === 80) return 50; // migrate previous 80% default to 50%
         if (!isNaN(parsed) && parsed >= 0 && parsed <= 100) return parsed;
       }
-    } catch {}
+    } catch { }
     return 50;
   });
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -60,11 +61,11 @@ export default function ExplorePlayerDeck({
   const [toastIcon, setToastIcon] = useState<string>('🔊');
   const [isAiToast, setIsAiToast] = useState<boolean>(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isImmersive, setIsImmersive] = useState<boolean>(true); // Default to immersive when playing starts
 
   // Web Audio DSP Engine integration
   const engine = useAudioEngine(audioRef);
   const [enhancerOpen, setEnhancerOpen] = useState<boolean>(false);
-  const activeEmotion = activeEmotionData;
 
   // Stable refs to prevent re-triggering effects on volume/engine churn
   const volumeRef = useRef(volume);
@@ -121,7 +122,7 @@ export default function ExplorePlayerDeck({
     prevIsPlayingRef.current = isPlaying;
 
     if (isPlaying) {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(() => { });
     } else {
       audioRef.current.pause();
     }
@@ -137,7 +138,12 @@ export default function ExplorePlayerDeck({
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration || currentSong?.duration || 240);
-      audioRef.current.volume = isMuted ? 0 : volume / 100;
+      if (engineRef.current.isInitialized) {
+        audioRef.current.volume = 1.0;
+        engineRef.current.setVolume(isMuted ? 0 : volume);
+      } else {
+        audioRef.current.volume = isMuted ? 0 : volume / 100;
+      }
       setIsLoadingAudio(false);
     }
   };
@@ -159,22 +165,27 @@ export default function ExplorePlayerDeck({
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('deluxe_explore_volume', String(clamped));
-      } catch {}
+      } catch { }
     }
-    if (audioRef.current) {
-      audioRef.current.volume = clamped / 100;
+    if (engineRef.current.isInitialized) {
+      if (audioRef.current) audioRef.current.volume = 1.0;
+      engineRef.current.setVolume(clamped);
+    } else {
+      if (audioRef.current) audioRef.current.volume = clamped / 100;
     }
-    engineRef.current.setVolume(clamped);
     showToast(`Volume: ${clamped}%`, clamped === 0 ? '🔇' : clamped < 50 ? '🔉' : '🔊');
   }, [showToast]);
 
   const toggleMute = useCallback(() => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
-    if (audioRef.current) {
-      audioRef.current.volume = nextMuted ? 0 : volume / 100;
+    const targetVol = nextMuted ? 0 : volume;
+    if (engineRef.current.isInitialized) {
+      if (audioRef.current) audioRef.current.volume = 1.0;
+      engineRef.current.setVolume(targetVol);
+    } else {
+      if (audioRef.current) audioRef.current.volume = targetVol / 100;
     }
-    engineRef.current.setVolume(nextMuted ? 0 : volume);
     showToast(nextMuted ? 'Muted' : `Volume: ${volume}%`, nextMuted ? '🔇' : '🔊');
   }, [isMuted, volume, showToast]);
 
@@ -252,26 +263,6 @@ export default function ExplorePlayerDeck({
           <div className="spotify-queue-header">
             <div className="spotify-queue-title-block">
               <h3 className="spotify-queue-heading">Queue</h3>
-              {activeEmotion && (
-                <span className="spotify-queue-emotion-pill">
-                  {activeEmotion.icon} {activeEmotion.label}
-                </span>
-              )}
-              {onToggleAiRec && (
-                <button
-                  type="button"
-                  className={`spotify-queue-ai-toggle ${aiRecEnabled ? 'active' : ''}`}
-                  onClick={onToggleAiRec}
-                  title={
-                    aiRecEnabled
-                      ? 'AI Recommendation: ON (Gemini AI DJ) • Click to turn OFF & save tokens'
-                      : 'AI Recommendation: OFF (Fast Multi-Source) • Click to turn ON'
-                  }
-                >
-                  <span className="spotify-ai-toggle-dot" />
-                  <span>{aiRecEnabled ? '✨ AI Rec: ON' : '⚡ AI Rec: OFF'}</span>
-                </button>
-              )}
             </div>
             <button
               type="button"
@@ -288,27 +279,21 @@ export default function ExplorePlayerDeck({
             <div className="spotify-queue-section">
               <span className="spotify-queue-section-label">Now Playing</span>
               <div className="spotify-queue-item active">
-                <img
-                  src={currentSong.cover}
-                  alt={currentSong.name}
+                <SongArtwork
+                  cover={currentSong.cover}
+                  name={currentSong.name}
+                  songId={currentSong.id}
                   className="spotify-queue-thumb"
                 />
                 <div className="spotify-queue-info">
                   <div className="spotify-queue-name-row">
                     <span className="spotify-queue-song-name active">{currentSong.name}</span>
-                    {currentSong.sourceBadge && (
-                      <span
-                        className="spotify-queue-source-pill"
-                        style={{
-                          backgroundColor: currentSong.sourceBadge.bg,
-                          color: currentSong.sourceBadge.color,
-                          borderColor: currentSong.sourceBadge.border,
-                        }}
-                        title={`${currentSong.sourceBadge.name} (${currentSong.sourceBadge.qualityLabel})`}
-                      >
-                        {currentSong.sourceBadge.icon} {currentSong.sourceBadge.name} • {currentSong.sourceBadge.qualityLabel}
-                      </span>
-                    )}
+                    <SourceQualityBadge
+                      source={currentSong.source}
+                      sourceBadge={currentSong.sourceBadge}
+                      quality={currentSong.quality}
+                      size="sm"
+                    />
                   </div>
                   <span className="spotify-queue-artist-name">{currentSong.artist}</span>
                 </div>
@@ -324,14 +309,14 @@ export default function ExplorePlayerDeck({
             <div className="spotify-queue-section">
               <div className="spotify-queue-section-header">
                 <span className="spotify-queue-section-label">
-                  Next from: {activeEmotion?.label || 'Same Emotion'}
+                  Next in Queue
                 </span>
                 <span className="spotify-queue-count">{upcomingQueue.length} songs</span>
               </div>
 
               {upcomingQueue.length === 0 ? (
                 <div className="spotify-queue-empty">
-                  <span>Finding matching vibe songs...</span>
+                  <span>No more songs in queue.</span>
                 </div>
               ) : (
                 <div className="spotify-queue-list">
@@ -346,27 +331,21 @@ export default function ExplorePlayerDeck({
                       }}
                     >
                       <span className="spotify-queue-index">{idx + 1}</span>
-                      <img
-                        src={song.cover}
-                        alt={song.name}
+                      <SongArtwork
+                        cover={song.cover}
+                        name={song.name}
+                        songId={song.id}
                         className="spotify-queue-thumb"
                       />
                       <div className="spotify-queue-info">
                         <div className="spotify-queue-name-row">
                           <span className="spotify-queue-song-name">{song.name}</span>
-                          {song.sourceBadge && (
-                            <span
-                              className="spotify-queue-source-pill"
-                              style={{
-                                backgroundColor: song.sourceBadge.bg,
-                                color: song.sourceBadge.color,
-                                borderColor: song.sourceBadge.border,
-                              }}
-                              title={`${song.sourceBadge.name} (${song.sourceBadge.qualityLabel})`}
-                            >
-                              {song.sourceBadge.icon} {song.sourceBadge.name} • {song.sourceBadge.qualityLabel}
-                            </span>
-                          )}
+                          <SourceQualityBadge
+                            source={song.source}
+                            sourceBadge={song.sourceBadge}
+                            quality={song.quality}
+                            size="sm"
+                          />
                         </div>
                         <span className="spotify-queue-artist-name">{song.artist}</span>
                       </div>
@@ -382,9 +361,19 @@ export default function ExplorePlayerDeck({
         </div>
       )}
 
-      <div className="spotify-bottom-player-bar">
+      <motion.div
+        className={cn(
+          "fixed bottom-4 left-1/2 -translate-x-1/2 w-[95%] max-w-4xl z-[100] fluid-pill-nav",
+          "flex flex-col overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]",
+          isImmersive ? "pointer-events-none" : ""
+        )}
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: isImmersive ? 120 : 0, opacity: isImmersive ? 0 : 1 }}
+        transition={{ type: "spring", stiffness: 220, damping: 24 }}
+      >
         <audio
           ref={audioRef}
+          crossOrigin="anonymous"
           playsInline
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
@@ -407,244 +396,194 @@ export default function ExplorePlayerDeck({
                 const check = await fetch(currentSong.streamUrl, { method: 'HEAD' });
                 if (!check.ok) httpStatus = ` [HTTP ${check.status}]`;
               }
-            } catch {}
+            } catch { }
             showToast(`${codeLabel}${httpStatus}. Tap to retry.`, '⚠️');
           }}
           preload="auto"
         />
 
-        {/* Mobile Top-Edge Micro Progress Bar (Hidden on Desktop) */}
-        <div className="spotify-mobile-micro-progress" onClick={handleSeek}>
+        {/* Thin progress scrubber line at the top for mobile */}
+        <div
+          className="w-full h-[2px] md:hidden bg-white/10 cursor-pointer relative overflow-hidden"
+          onClick={handleSeek}
+        >
           <div
-            className="spotify-mobile-micro-progress-fill"
-            style={{
-              width: `${Math.min(100, (currentTime / (duration || currentSong.duration || 240)) * 100)}%`,
-            }}
+            className="absolute top-0 left-0 h-full bg-[#1db954]"
+            style={{ width: `${Math.min(100, (currentTime / (duration || currentSong.duration || 240)) * 100)}%` }}
           />
         </div>
 
-        <div className="spotify-player-inner">
-          {/* Left: 56px Artwork, Title, Artist, & 320k Tag */}
-          <div className="spotify-player-left">
-            <img
-              src={currentSong.cover}
-              alt={currentSong.name}
-              className="spotify-player-thumb"
-            />
-            <div className="spotify-player-track-info">
-              <div className="spotify-player-title-row">
-                <span className="spotify-player-title" title={currentSong.name}>
-                  {currentSong.name}
-                </span>
-                <img
-                  src="/hires-audio.jpg"
-                  alt="Hi-Res Audio"
-                  className="spotify-player-hires-logo"
-                  title="Hi-Res Audio • FLAC (24 bit, 192 kHz, Stereo)"
-                />
-                {currentSong.sourceBadge && (
-                  <span
-                    className="spotify-player-source-pill"
-                    style={{
-                      backgroundColor: currentSong.sourceBadge.bg,
-                      color: currentSong.sourceBadge.color,
-                      borderColor: currentSong.sourceBadge.border,
-                    }}
-                    title={`Playing via ${currentSong.sourceBadge.name} (${currentSong.sourceBadge.qualityLabel})`}
-                  >
-                    {currentSong.sourceBadge.icon} {currentSong.sourceBadge.name}
-                  </span>
-                )}
-              </div>
-              <span className="spotify-player-artist" title={currentSong.artist}>
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 gap-2">
+          {/* Left: Artwork & Info (Tap anywhere to open Immersive Player) */}
+          <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer flex-1 min-w-0 md:w-1/3 md:flex-initial" onClick={() => setIsImmersive(true)}>
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden shrink-0 border border-white/10 shadow-lg relative group">
+              <SongArtwork
+                cover={currentSong.cover}
+                name={currentSong.name}
+                songId={currentSong.id}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-white font-bold text-xs sm:text-sm truncate" title={currentSong.name}>
+                {currentSong.name}
+              </span>
+              <span className="text-white/60 text-[11px] sm:text-xs truncate mt-0.5" title={currentSong.artist}>
                 {currentSong.artist}
               </span>
             </div>
           </div>
 
-          {/* Center: Controls & Scrubber */}
-          <div className="spotify-player-center">
-            <div className="spotify-player-controls-row">
-              {/* Previous Track */}
+          {/* Center: Desktop Controls & Scrubber */}
+          <div className="hidden md:flex flex-col items-center justify-center flex-1 max-w-md px-3">
+            <div className="flex items-center gap-4 mb-1">
               <button
                 type="button"
-                className={`spotify-transport-btn ${!hasPrev ? 'btn-disabled' : ''}`}
+                className="text-white/60 hover:text-white transition-colors disabled:opacity-30 active:scale-95"
                 onClick={handlePrevClick}
                 disabled={!hasPrev && currentTime < 3}
-                aria-label="Previous track (P)"
-                title="Previous track (P)"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-                </svg>
+                <SkipBack size={20} weight="light" />
               </button>
 
-              {/* Play/Pause Main Button */}
               <button
                 type="button"
-                className="spotify-main-play-btn"
+                className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-[0_4px_16px_rgba(255,255,255,0.2)]"
                 onClick={onTogglePlay}
-                aria-label={isPlaying ? 'Pause' : 'Play'}
-                title={isPlaying ? 'Pause (Space)' : 'Play (Space)'}
               >
                 {isLoadingAudio ? (
-                  <span className="spotify-spinner-mini" />
+                  <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
                 ) : isPlaying ? (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#000000">
-                    <rect x="6" y="4" width="4" height="16" rx="1" />
-                    <rect x="14" y="4" width="4" height="16" rx="1" />
-                  </svg>
+                  <Pause size={20} weight="fill" />
                 ) : (
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#000000">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
+                  <Play size={20} weight="fill" className="ml-0.5" />
                 )}
               </button>
 
-              {/* Next Track */}
               <button
                 type="button"
-                className={`spotify-transport-btn ${!hasNext ? 'btn-disabled' : ''}`}
+                className="text-white/60 hover:text-white transition-colors disabled:opacity-30 active:scale-95"
                 onClick={onNextSong}
                 disabled={!hasNext}
-                aria-label="Next track (N)"
-                title="Next track (N)"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-                </svg>
-              </button>
-
-              {/* Audio Enhancer EQ Button */}
-              <button
-                type="button"
-                className={`spotify-icon-button ${enhancerOpen ? 'button-spotify-active' : ''}`}
-                onClick={() => {
-                  engine.initEngine();
-                  setEnhancerOpen(true);
-                }}
-                aria-label="Audio Enhancer"
-                title="Equalizer & Sound Effects"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="2" y="14" width="4" height="8" rx="1" />
-                  <rect x="10" y="6" width="4" height="16" rx="1" />
-                  <rect x="18" y="10" width="4" height="12" rx="1" />
-                </svg>
+                <SkipForward size={20} weight="light" />
               </button>
             </div>
 
-            {/* Progress Row */}
-            <div className="spotify-playback-bar-wrap">
-              <span className="spotify-time-text">{formatTime(currentTime)}</span>
-              <div className="spotify-progress-bar-container" onClick={handleSeek}>
+            <div className="flex items-center w-full gap-2.5 text-[11px] text-white/50 font-mono">
+              <span className="w-8 text-right">{formatTime(currentTime)}</span>
+              <div
+                className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer relative overflow-hidden group"
+                onClick={handleSeek}
+              >
                 <div
-                  className="spotify-progress-bar-fill"
-                  style={{
-                    width: `${Math.min(100, (currentTime / (duration || currentSong.duration || 240)) * 100)}%`,
-                  }}
+                  className="absolute top-0 left-0 h-full bg-white/90 group-hover:bg-[#1db954] rounded-full"
+                  style={{ width: `${Math.min(100, (currentTime / (duration || currentSong.duration || 240)) * 100)}%` }}
                 />
               </div>
-              <span className="spotify-time-text">
-                {formatTime(duration || currentSong.duration || 240)}
-              </span>
+              <span className="w-8">{formatTime(duration || currentSong.duration || 240)}</span>
             </div>
           </div>
 
-          {/* Right: Volume, Queue & Dismiss */}
-          <div className="spotify-player-right">
-            {/* Hi-Res Audio Quality Pill */}
-            <div
-              className="spotify-player-hires-pill"
-              title="Hi-Res Audio • FLAC (24 bit, 192 kHz, Stereo)"
-            >
-              <img
-                src="/hires-audio.jpg"
-                alt="Hi-Res Audio"
-                className="spotify-player-hires-pill-img"
-              />
-              <span className="spotify-player-hires-pill-text">Hi-Res</span>
-            </div>
-
-            {/* Queue Drawer Button */}
-            <button
-              type="button"
-              className={`spotify-queue-btn ${queueOpen ? 'button-spotify-active' : ''}`}
-              onClick={() => setQueueOpen((o) => !o)}
-              title="Queue & Upcoming Songs"
-              aria-label="Queue & Upcoming Songs"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <line x1="8" y1="6" x2="21" y2="6" />
-                <line x1="8" y1="12" x2="21" y2="12" />
-                <line x1="8" y1="18" x2="21" y2="18" />
-                <line x1="3" y1="6" x2="3.01" y2="6" />
-                <line x1="3" y1="12" x2="3.01" y2="12" />
-                <line x1="3" y1="18" x2="3.01" y2="18" />
-              </svg>
-              {upcomingQueue.length > 0 && (
-                <span className="spotify-queue-badge">{upcomingQueue.length}</span>
-              )}
-            </button>
-
-            <div
-              className="spotify-volume-container"
-              onMouseEnter={() => setIsVolHovered(true)}
-              onMouseLeave={() => setIsVolHovered(false)}
-            >
+          {/* Right: Actions & Mobile Transport */}
+          <div className="flex items-center justify-end gap-1.5 sm:gap-3 shrink-0 md:w-1/3">
+            {/* Mobile Play/Pause & Next */}
+            <div className="flex md:hidden items-center gap-1">
               <button
                 type="button"
-                className="spotify-vol-btn"
-                onClick={toggleMute}
-                aria-label={isMuted || displayVolume === 0 ? 'Unmute' : 'Mute'}
-                title={isMuted || displayVolume === 0 ? 'Unmute' : 'Mute'}
+                className="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center active:scale-90 transition-all shadow-md"
+                onClick={onTogglePlay}
               >
-                {isMuted || displayVolume === 0 ? '🔇' : displayVolume < 50 ? '🔉' : '🔊'}
+                {isLoadingAudio ? (
+                  <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                ) : isPlaying ? (
+                  <Pause size={17} weight="fill" />
+                ) : (
+                  <Play size={17} weight="fill" className="ml-0.5" />
+                )}
               </button>
 
-              {/* Spotify-style two-tone filled volume track */}
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={displayVolume}
-                onChange={(e) => handleVolumeChange(parseInt(e.target.value, 10))}
-                className="spotify-vol-slider"
-                style={{
-                  background: `linear-gradient(to right, ${
-                    isVolHovered ? '#1ed760' : '#ffffff'
-                  } 0%, ${
-                    isVolHovered ? '#1ed760' : '#ffffff'
-                  } ${displayVolume}%, #4d4d4d ${displayVolume}%, #4d4d4d 100%)`,
-                }}
-                title={`Volume: ${displayVolume}% (Press Up/Down to adjust)`}
-              />
-
-              <span className="spotify-vol-percent-label">{displayVolume}%</span>
+              <button
+                type="button"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white/80 hover:text-white active:scale-90 transition-all"
+                onClick={onNextSong}
+                disabled={!hasNext}
+              >
+                <SkipForward size={18} weight="fill" />
+              </button>
             </div>
 
+            <button
+              type="button"
+              className={cn("hidden sm:flex text-white/60 hover:text-white active:scale-95 transition-all", enhancerOpen && "text-[#1db954]")}
+              onClick={() => {
+                engine.initEngine();
+                setEnhancerOpen(true);
+              }}
+              title="Sound Studio"
+            >
+              <SlidersHorizontal size={18} />
+            </button>
+            <button
+              type="button"
+              className={cn("text-white/60 hover:text-white active:scale-95 transition-all p-1.5", queueOpen && "text-[#1db954]")}
+              onClick={() => setQueueOpen((o) => !o)}
+              title="Queue"
+            >
+              <Playlist size={19} />
+            </button>
             {onClose && (
               <button
                 type="button"
-                className="spotify-close-player-btn"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 transition-all active:scale-90"
                 onClick={onClose}
-                title="Close player"
-                aria-label="Close player"
               >
-                ✕
+                <X size={14} />
               </button>
             )}
           </div>
         </div>
+      </motion.div>
 
-        {/* Audio Enhancer Modal */}
-        <AudioEnhancer
-          engine={engine}
-          isOpen={enhancerOpen}
-          onClose={() => setEnhancerOpen(false)}
-          hideAi={true}
-        />
-      </div>
+      {/* Keep ImmersivePlayer mounted outside the fluid-pill-nav to maintain its fixed inset behavior */ }
+      <AnimatePresence>
+  {
+    isImmersive && (
+      <ImmersivePlayer
+        currentSong={currentSong}
+        isPlaying={isPlaying}
+        onTogglePlay={onTogglePlay}
+        onNextSong={onNextSong}
+        onPrevSong={handlePrevClick}
+        upcomingQueue={upcomingQueue}
+        historyStack={historyStack}
+        onMinimize={() => setIsImmersive(false)}
+        volume={volume}
+        isMuted={isMuted}
+        onVolumeChange={handleVolumeChange}
+        onToggleMute={toggleMute}
+        onOpenEnhancer={() => {
+          engine.initEngine();
+          setEnhancerOpen(true);
+        }}
+        onToggleQueue={() => setQueueOpen((o) => !o)}
+        currentTime={currentTime}
+        duration={duration}
+        onSeek={handleSeek}
+        isLoadingAudio={isLoadingAudio}
+        formatTime={formatTime}
+      />
+    )
+  }
+      </AnimatePresence>
+
+      {/* Audio Enhancer Modal */}
+      <AudioEnhancer
+        engine={engine}
+        isOpen={enhancerOpen}
+        onClose={() => setEnhancerOpen(false)}
+        hideAi={true}
+      />
     </>
   );
 }

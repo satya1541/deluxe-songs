@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { parseSearchQuery, detectSearchIntent } from '@/lib/search-parser';
+import { stringSimilarity } from '@/lib/entity-resolution';
+import { searchSaavnArtists, fetchRealArtistImage } from '@/lib/saavn-stream';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,9 +18,15 @@ function cleanHtml(text: string): string {
     .trim();
 }
 
-function cleanImage(imageUrl: string): string {
-  if (!imageUrl) return '';
-  return imageUrl.trim();
+function cleanImage(imageUrl?: string): string {
+  if (!imageUrl || typeof imageUrl !== 'string') return '';
+  if (imageUrl.includes('artist-default') || imageUrl.includes('default_artist') || imageUrl.includes('default-film')) {
+    return '';
+  }
+  return imageUrl
+    .replace(/50x50\.jpg/gi, '500x500.jpg')
+    .replace(/150x150\.jpg/gi, '500x500.jpg')
+    .trim();
 }
 
 export interface SearchSuggestionItem {
@@ -27,94 +36,93 @@ export interface SearchSuggestionItem {
   type: 'song' | 'artist' | 'query' | 'album';
   image?: string;
   queryValue: string;
+  score?: number; // Used internally for ranking
 }
 
-const DEFAULT_POPULAR_SUGGESTIONS: SearchSuggestionItem[] = [
-  {
-    id: 'pop-1',
-    title: 'Arijit Singh',
-    subtitle: 'Popular Artist • Romantic Anthems',
-    type: 'artist',
-    image: 'https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_150x150.jpg',
-    queryValue: 'Arijit Singh',
-  },
-  {
-    id: 'pop-2',
-    title: 'Kesariya',
-    subtitle: 'Song • Brahmāstra • Pritam, Arijit Singh',
-    type: 'song',
-    image: 'https://c.saavncdn.com/871/Brahmastra-Original-Motion-Picture-Soundtrack-Hindi-2022-20221006155213-150x150.jpg',
-    queryValue: 'Kesariya',
-  },
-  {
-    id: 'pop-3',
-    title: 'Diljit Dosanjh',
-    subtitle: 'Popular Artist • Global Punjabi Pop',
-    type: 'artist',
-    image: 'https://c.saavncdn.com/artists/Diljit_Dosanjh_005_20231025073054_150x150.jpg',
-    queryValue: 'Diljit Dosanjh',
-  },
-  {
-    id: 'pop-4',
-    title: 'Softly',
-    subtitle: 'Song • Karan Aujla, Ikky',
-    type: 'song',
-    image: 'https://c.saavncdn.com/538/Making-Memories-English-2023-20230818075015-150x150.jpg',
-    queryValue: 'Softly Karan Aujla',
-  },
-  {
-    id: 'pop-5',
-    title: 'Shreya Ghoshal',
-    subtitle: 'Popular Artist • Melodious Vocals',
-    type: 'artist',
-    image: 'https://c.saavncdn.com/artists/Shreya_Ghoshal_007_20241101074144_150x150.jpg',
-    queryValue: 'Shreya Ghoshal',
-  },
-  {
-    id: 'pop-6',
-    title: 'Anirudh Ravichander',
-    subtitle: 'Popular Artist • High-Energy Hits',
-    type: 'artist',
-    image: 'https://c.saavncdn.com/artists/Anirudh_Ravichander_003_20260121134149_150x150.jpg',
-    queryValue: 'Anirudh Ravichander',
-  },
-  {
-    id: 'pop-7',
-    title: 'Channa Mereya',
-    subtitle: 'Song • Ae Dil Hai Mushkil • Pritam, Arijit',
-    type: 'song',
-    image: 'https://c.saavncdn.com/257/Ae-Dil-Hai-Mushkil-Hindi-2016-150x150.jpg',
-    queryValue: 'Channa Mereya',
-  },
-  {
-    id: 'pop-8',
-    title: 'Atif Aslam',
-    subtitle: 'Popular Artist • Soulful Ballads',
-    type: 'artist',
-    image: 'https://c.saavncdn.com/716/Atif-Aslam-Mashup-2-Hindi-2026-20260424160758-150x150.jpg',
-    queryValue: 'Atif Aslam',
-  },
-];
+export interface GroupedSuggestions {
+  artists: SearchSuggestionItem[];
+  songs: SearchSuggestionItem[];
+  albums: SearchSuggestionItem[];
+  queries: SearchSuggestionItem[];
+}
+
+// Rank suggestion items based on intent and query similarity
+function rankSuggestions(
+  items: SearchSuggestionItem[],
+  query: string,
+  intentPrimary: string,
+  targetType: string
+): SearchSuggestionItem[] {
+  const queryLower = query.toLowerCase().trim();
+  
+  const scoredItems = items.map(item => {
+    let score = 0;
+    const titleLower = item.title.toLowerCase().trim();
+    
+    // 1. Exact match
+    if (titleLower === queryLower) score += 250;
+    // 2. Prefix match
+    else if (titleLower.startsWith(queryLower)) score += 120;
+    // 3. Token match
+    else if (titleLower.includes(queryLower)) score += 50;
+    // 4. Fuzzy match
+    else {
+      const sim = stringSimilarity(query, item.title);
+      if (sim > 0.7) score += sim * 40;
+    }
+
+    // Heavy boost for clean solo artist names (not multi-person semicolon producer strings)
+    if (targetType === 'artist') {
+      if (!item.title.includes(';') && !item.title.includes('&') && !item.title.includes(',')) {
+        score += 80;
+      } else {
+        score -= 60; // Penalize messy multi-producer strings
+      }
+      if (item.image && !item.image.includes('photo-1511671782779-c97d3d27a1d4')) {
+        score += 30;
+      }
+    }
+    
+    // 5. Intent compatibility
+    if (intentPrimary === targetType.toUpperCase()) {
+      score += 50; // Boost entity types that match detected intent
+    }
+
+    return { ...item, score };
+  });
+
+  scoredItems.sort((a, b) => (b.score || 0) - (a.score || 0));
+  return scoredItems;
+}
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q') || '';
   const trimmed = query.trim();
 
-  // If query is empty or 1 char, return default trending search suggestions
+  // If query is empty or 1 char, return empty grouped suggestions (no default suggestions)
   if (!trimmed || trimmed.length < 2) {
     return NextResponse.json({
       success: true,
       query: trimmed,
-      isDefault: true,
-      suggestions: DEFAULT_POPULAR_SUGGESTIONS,
+      isDefault: false,
+      groupedSuggestions: {
+        artists: [],
+        songs: [],
+        albums: [],
+        queries: [],
+      },
     });
   }
 
+  const parsedQuery = parseSearchQuery(trimmed);
+  const intent = detectSearchIntent(parsedQuery);
+  const effectiveQuery = parsedQuery.baseQuery;
+
   try {
-    const [saavnRes, ytRes] = await Promise.allSettled([
+    const [saavnRes, ytRes, directArtistsRes] = await Promise.allSettled([
       fetch(
         `https://www.jiosaavn.com/api.php?__call=autocomplete.get&_format=json&_marker=0&api_version=4&ctx=web6dot0&query=${encodeURIComponent(
-          trimmed
+          effectiveQuery
         )}`,
         {
           headers: {
@@ -124,27 +132,53 @@ export async function GET(request: NextRequest) {
       ),
       fetch(
         `https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(
-          trimmed
+          trimmed // For youtube use full query for context
         )}`
       ),
+      searchSaavnArtists(effectiveQuery, 4),
     ]);
 
-    const suggestions: SearchSuggestionItem[] = [];
+    const allArtists: SearchSuggestionItem[] = [];
+    const allAlbums: SearchSuggestionItem[] = [];
+    const allSongs: SearchSuggestionItem[] = [];
+    const allQueries: SearchSuggestionItem[] = [];
+    
+    const seenArtistNames = new Set<string>();
     const seenTitles = new Set<string>();
 
-    // 1. Parse YouTube / Global suggestions first for smart auto-correction and trending hits
+    // 1. First add Direct Verified Artists from searchSaavnArtists (provides genuine solo artist)
+    if (directArtistsRes.status === 'fulfilled' && Array.isArray(directArtistsRes.value)) {
+      for (const artist of directArtistsRes.value) {
+        const title = cleanHtml(artist.name);
+        const lower = title.toLowerCase();
+        if (!title || seenArtistNames.has(lower)) continue;
+        seenArtistNames.add(lower);
+        seenTitles.add(lower);
+
+        allArtists.push({
+          id: `art-${artist.id}`,
+          title,
+          subtitle: cleanHtml(artist.role || 'Verified Artist'),
+          type: 'artist',
+          image: artist.cover,
+          queryValue: title,
+        });
+      }
+    }
+
+    // 2. Parse YouTube / Global suggestions first for smart auto-correction and trending hits
     if (ytRes.status === 'fulfilled' && ytRes.value.ok) {
       try {
         const ytData = await ytRes.value.json();
         const queries = Array.isArray(ytData[1]) ? ytData[1] : [];
-        for (const q of queries.slice(0, 4)) {
+        for (const q of queries.slice(0, 5)) {
           const title = cleanHtml(String(q));
           if (!title || seenTitles.has(title.toLowerCase())) continue;
           seenTitles.add(title.toLowerCase());
-          suggestions.push({
+          allQueries.push({
             id: `yt-${Math.random().toString(36).substring(7)}`,
             title,
-            subtitle: 'YouTube Music & Global Match',
+            subtitle: 'Opus & Global Match',
             type: 'query',
             queryValue: title,
           });
@@ -152,23 +186,46 @@ export async function GET(request: NextRequest) {
       } catch {}
     }
 
-    // 2. Parse JioSaavn autocomplete if available
+    // 3. Parse JioSaavn autocomplete if available
     if (saavnRes.status === 'fulfilled' && saavnRes.value.ok) {
       try {
         const data = await saavnRes.value.json();
 
-        // Top Direct Queries
-        if (Array.isArray(data.topquery?.data)) {
-          for (const item of data.topquery.data) {
+        // Matching Artists from Autocomplete
+        if (Array.isArray(data.artists?.data)) {
+          for (const item of data.artists.data) {
+            const title = cleanHtml(item.name || item.title);
+            const lower = title.toLowerCase();
+            if (!title || seenArtistNames.has(lower)) continue;
+            seenArtistNames.add(lower);
+            seenTitles.add(lower);
+
+            const rawImg = cleanImage(item.image);
+            const resolvedImg = rawImg || (await fetchRealArtistImage(title));
+
+            allArtists.push({
+              id: `art-${item.id || Math.random()}`,
+              title,
+              subtitle: cleanHtml(item.description || 'Artist'),
+              type: 'artist',
+              image: resolvedImg,
+              queryValue: title,
+            });
+          }
+        }
+
+        // Matching Albums
+        if (Array.isArray(data.albums?.data)) {
+          for (const item of data.albums.data) {
             const title = cleanHtml(item.title);
             if (!title || seenTitles.has(title.toLowerCase())) continue;
             seenTitles.add(title.toLowerCase());
 
-            suggestions.push({
-              id: `top-${item.id || Math.random()}`,
+            allAlbums.push({
+              id: `alb-${item.id || Math.random()}`,
               title,
-              subtitle: item.type ? `${item.type.toUpperCase()} • Best Match` : 'Search Suggestion',
-              type: item.type === 'artist' ? 'artist' : item.type === 'song' ? 'song' : 'query',
+              subtitle: cleanHtml(item.description || item.music || 'Album'),
+              type: 'album',
               image: cleanImage(item.image),
               queryValue: title,
             });
@@ -186,7 +243,7 @@ export async function GET(request: NextRequest) {
               item.description || item.subtitle || item.more_info?.primary_artists || 'Song'
             );
 
-            suggestions.push({
+            allSongs.push({
               id: `song-${item.id || Math.random()}`,
               title,
               subtitle,
@@ -196,38 +253,34 @@ export async function GET(request: NextRequest) {
             });
           }
         }
-
-        // Matching Artists
-        if (Array.isArray(data.artists?.data)) {
-          for (const item of data.artists.data) {
-            const title = cleanHtml(item.name || item.title);
-            if (!title || seenTitles.has(title.toLowerCase())) continue;
-            seenTitles.add(title.toLowerCase());
-
-            suggestions.push({
-              id: `art-${item.id || Math.random()}`,
-              title,
-              subtitle: cleanHtml(item.description || 'Artist'),
-              type: 'artist',
-              image: cleanImage(item.image),
-              queryValue: title,
-            });
-          }
-        }
       } catch {}
     }
+
+    // 4. Rank and Slice limits
+    const rankedArtists = rankSuggestions(allArtists, effectiveQuery, intent.primary, 'artist').slice(0, 2);
+    const rankedAlbums = rankSuggestions(allAlbums, effectiveQuery, intent.primary, 'album').slice(0, 2);
+    const rankedSongs = rankSuggestions(allSongs, effectiveQuery, intent.primary, 'song').slice(0, 4);
+    const rankedQueries = rankSuggestions(allQueries, effectiveQuery, intent.primary, 'query').slice(0, 3);
+
+    const groupedSuggestions: GroupedSuggestions = {
+      artists: rankedArtists,
+      albums: rankedAlbums,
+      songs: rankedSongs,
+      queries: rankedQueries
+    };
 
     return NextResponse.json({
       success: true,
       query: trimmed,
-      suggestions: suggestions.slice(0, 10),
+      intent, // Return intent metadata to client
+      groupedSuggestions,
     });
   } catch (err) {
     console.error('Autocomplete suggestions error:', err);
     return NextResponse.json({
       success: false,
       query: trimmed,
-      suggestions: [],
+      groupedSuggestions: { artists: [], songs: [], albums: [], queries: [] },
     });
   }
 }

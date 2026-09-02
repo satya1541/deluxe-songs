@@ -1,12 +1,31 @@
 export type AudioSourcePlatform = 'jiosaavn' | 'youtube' | 'soundcloud';
 
 export interface SourceBadge {
-  name: 'JioSaavn' | 'YouTube Music' | 'SoundCloud';
+  name: string;
   icon: string;
+  logoUrl?: string;
   color: string;
   bg: string;
   border: string;
   qualityLabel: string;
+}
+
+export interface CanonicalEntityBase {
+  id: string;
+  name: string;
+  cover: string;
+  source: AudioSourcePlatform | 'mixed';
+}
+
+export interface CanonicalArtist extends CanonicalEntityBase {
+  type: 'artist';
+  role?: string;
+}
+
+export interface CanonicalAlbum extends CanonicalEntityBase {
+  type: 'album';
+  artist: string;
+  year?: string;
 }
 
 export interface ExploreSong {
@@ -23,6 +42,27 @@ export interface ExploreSong {
   sourceBadge?: SourceBadge;
   language?: string;
   hasLyrics?: boolean;
+  rankingMode?: import('./recommendation').RankingMode;
+}
+
+export interface CanonicalSong extends ExploreSong {
+  type: 'song';
+  fallbackSources?: Array<{
+    source: AudioSourcePlatform;
+    id: string;
+    streamUrl: string;
+    quality: string;
+    sourceBadge?: SourceBadge;
+  }>;
+}
+
+export interface ExploreSearchResult {
+  topResult?: CanonicalArtist | CanonicalAlbum | CanonicalSong;
+  songs: CanonicalSong[];
+  artists: CanonicalArtist[];
+  albums: CanonicalAlbum[];
+  correctedQuery?: string;
+  intent?: { primary: string; confidence: number };
 }
 
 export interface LanguageOption {
@@ -33,7 +73,6 @@ export interface LanguageOption {
 }
 
 export const SUPPORTED_LANGUAGES: LanguageOption[] = [
-  { id: 'all', name: 'All / Global', icon: '🌍', queryHint: 'Top Global Hits' },
   { id: 'hindi', name: 'Hindi', icon: '🇮🇳', queryHint: 'Trending Hindi Bollywood' },
   { id: 'punjabi', name: 'Punjabi', icon: '⚡', queryHint: 'Top Punjabi Hits' },
   { id: 'english', name: 'English', icon: '✨', queryHint: 'Billboard Hot 100' },
@@ -46,4 +85,5 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { id: 'marathi', name: 'Marathi', icon: '🥁', queryHint: 'Marathi Hits Ajay Atul' },
   { id: 'gujarati', name: 'Gujarati', icon: '🪕', queryHint: 'Gujarati Garba & Hits' },
   { id: 'haryanvi', name: 'Haryanvi', icon: '🚀', queryHint: 'Haryanvi Ragni & Beats' },
+  { id: 'odia', name: 'Odia', icon: '🕉️', queryHint: 'Odia Chartbusters' },
 ];

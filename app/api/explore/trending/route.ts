@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTrendingMultiSource } from '@/lib/multi-music';
+import { RecommendationEngine } from '@/lib/recommendation-engine';
 import { AudioSourcePlatform } from '@/types/explore';
 
 export const dynamic = 'force-dynamic';
@@ -11,7 +11,15 @@ export async function GET(request: Request) {
     const source = (searchParams.get('source') || searchParams.get('platform') || 'all') as 'all' | AudioSourcePlatform;
     const limit = parseInt(searchParams.get('limit') || '30', 10);
 
-    const songs = await getTrendingMultiSource(language, source, Math.min(limit, 50));
+    let songs: any[] = [];
+    
+    // Regional languages -> strict chart logic
+    // 'all' -> discovery/trend logic
+    if (language.toLowerCase() !== 'all') {
+      songs = await RecommendationEngine.getChartTracks(language, source, Math.min(limit, 50));
+    } else {
+      songs = await RecommendationEngine.getDiscoveryTracks(language, source, Math.min(limit, 50));
+    }
 
     return NextResponse.json(
       {

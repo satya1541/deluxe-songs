@@ -7,7 +7,6 @@ import { useAudioEngine, AI_ACOUSTIC_PROFILES, AIAcousticProfile } from '@/hooks
 import AudioEnhancer from '@/components/AudioEnhancer';
 import EmotionOverlay, { getInstantEmotion } from '@/components/EmotionOverlay';
 import VolumeHUD from '@/components/VolumeHUD';
-import CinemaMode from '@/components/CinemaMode';
 import { useWakeLock } from '@/hooks/useWakeLock';
 
 const PLAYED_HISTORY_KEY = 'deluxe_played_history_v1';
@@ -695,30 +694,6 @@ export default function MusicPlayer() {
         />
       )}
 
-      {/* Fullscreen Cinema Immersion Mode (Press F) */}
-      <CinemaMode
-        isActive={cinemaOpen}
-        onClose={() => setCinemaOpen(false)}
-        currentSong={currentSong}
-        isPlaying={isPlaying}
-        onTogglePlay={togglePlay}
-        onNext={nextSong}
-        onPrev={prevSong}
-        currentTime={currentTime}
-        duration={duration}
-        onSeek={(t) => {
-          if (audioRef.current) {
-            audioRef.current.currentTime = t;
-            setCurrentTime(t);
-          }
-        }}
-        emotion={activeEmotion?.emotion || 'soft_romantic'}
-        engine={engine}
-        aiSmartEq={aiSmartEq}
-        onToggleAiSmartEq={toggleAiSmartEq}
-        onOpenEnhancer={() => setEnhancerOpen(true)}
-        isMetadataLoaded={!!(currentSong as any)._metadataFetched}
-      />
 
       {/* Audio Enhancer Panel with AI Smart Acoustics */}
       <AudioEnhancer

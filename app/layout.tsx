@@ -1,12 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Noto_Sans_Devanagari, Yatra_One, Rozha_One } from 'next/font/google';
+import { Noto_Sans_Devanagari, Yatra_One, Rozha_One } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
 import './globals.css';
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
+import './immersive.css';
+import './ethereal.css';
+import { GlobalAudioProvider } from '@/contexts/GlobalAudioContext';
+import GlobalPlayerWrapper from '@/components/GlobalPlayerWrapper';
 
 const notoSansDevanagari = Noto_Sans_Devanagari({
   subsets: ['devanagari', 'latin'],
@@ -56,7 +55,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#000000',
+  themeColor: '#050505',
 };
 
 export default function RootLayout({
@@ -65,8 +64,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" translate="no" className={`${inter.variable} ${notoSansDevanagari.variable} ${yatraOne.variable} ${rozhaOne.variable}`}>
-      <body className="notranslate">{children}</body>
+    <html lang="en" translate="no" className={`${GeistSans.variable} ${notoSansDevanagari.variable} ${yatraOne.variable} ${rozhaOne.variable}`}>
+      <body className="notranslate bg-black font-sans antialiased text-white">
+        <div className="ethereal-ambient-bg" />
+        <GlobalAudioProvider>
+          {children}
+          <GlobalPlayerWrapper />
+        </GlobalAudioProvider>
+      </body>
     </html>
   );
 }
+

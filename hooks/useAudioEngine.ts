@@ -428,6 +428,18 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
         ctx.resume().catch(() => {});
       }
 
+      // Read exact current listening volume before routing into Web Audio
+      let currentVolPct = state.volume;
+      if (audioRef.current && audioRef.current.volume > 0) {
+        currentVolPct = Math.round(audioRef.current.volume * 100);
+      } else if (typeof window !== 'undefined') {
+        try {
+          const saved = localStorage.getItem('deluxe_explore_volume');
+          if (saved) currentVolPct = parseInt(saved, 10);
+        } catch {}
+      }
+      if (isNaN(currentVolPct) || currentVolPct < 0 || currentVolPct > 100) currentVolPct = 50;
+
       // Ensure HTML5 media element delivers unity gain into Web Audio graph
       if (audioRef.current) {
         audioRef.current.volume = 1.0;
@@ -524,7 +536,7 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
 
       // === Volume ===
       const volumeNode = ctx.createGain();
-      volumeNode.gain.value = state.volume / 100;
+      volumeNode.gain.value = currentVolPct / 100;
       volumeRef.current = volumeNode;
 
       // ====== CONNECT THE CHAIN ======
@@ -563,7 +575,7 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
       // Post-reverb → Compressor section
       postReverb.connect(compressor);
       const compressorMakeupGain = ctx.createGain();
-      compressorMakeupGain.gain.value = 1.5;
+      compressorMakeupGain.gain.value = 1.0;
       compressor.connect(compressorMakeupGain);
       compressorMakeupGain.connect(compressorOutput);
 
@@ -733,12 +745,16 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
   // === Control functions ===
 
   const setPreset = useCallback((presetName: string) => {
+    initEngine();
     isAdaptiveModeRef.current = false;
     const preset = EQ_PRESETS.find(p => p.name === presetName);
     if (!preset) return;
 
     eqFiltersRef.current.forEach((filter, i) => {
-      filter.gain.setTargetAtTime(preset.gains[i], ctxRef.current?.currentTime ?? 0, 0.05);
+      try {
+        filter.gain.cancelScheduledValues(0);
+        filter.gain.value = preset.gains[i];
+      } catch {}
     });
 
     setState(prev => ({
@@ -747,13 +763,17 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
       eqGains: [...preset.gains],
       activeIntent: null,
     }));
-  }, []);
+  }, [initEngine]);
 
   const setEqBand = useCallback((bandIndex: number, gain: number) => {
+    initEngine();
     isAdaptiveModeRef.current = false;
     const filter = eqFiltersRef.current[bandIndex];
     if (filter) {
-      filter.gain.setTargetAtTime(gain, ctxRef.current?.currentTime ?? 0, 0.02);
+      try {
+        filter.gain.cancelScheduledValues(0);
+        filter.gain.value = gain;
+      } catch {}
     }
 
     setState(prev => {
@@ -769,16 +789,21 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
         activeIntent: null,
       };
     });
-  }, []);
+  }, [initEngine]);
 
   const setBassBoost = useCallback((value: number) => {
+    initEngine();
     if (bassFilterRef.current) {
-      bassFilterRef.current.gain.setTargetAtTime(value, ctxRef.current?.currentTime ?? 0, 0.05);
+      try {
+        bassFilterRef.current.gain.cancelScheduledValues(0);
+        bassFilterRef.current.gain.value = value;
+      } catch {}
     }
     setState(prev => ({ ...prev, bassBoost: value }));
-  }, []);
+  }, [initEngine]);
 
   const toggleMono = useCallback(() => {
+    initEngine();
     setState(prev => {
       const newMono = !prev.isMono;
       const t = ctxRef.current?.currentTime ?? 0;
@@ -795,9 +820,10 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
 
       return { ...prev, isMono: newMono };
     });
-  }, []);
+  }, [initEngine]);
 
   const toggleReverb = useCallback(() => {
+    initEngine();
     setState(prev => {
       const newEnabled = !prev.reverbEnabled;
       const t = ctxRef.current?.currentTime ?? 0;
@@ -813,9 +839,10 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
 
       return { ...prev, reverbEnabled: newEnabled };
     });
-  }, []);
+  }, [initEngine]);
 
   const setReverbMix = useCallback((value: number) => {
+    initEngine();
     setState(prev => {
       if (prev.reverbEnabled) {
         const mix = value / 100;
@@ -825,9 +852,10 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
       }
       return { ...prev, reverbMix: value };
     });
-  }, []);
+  }, [initEngine]);
 
   const toggleLoudness = useCallback(() => {
+    initEngine();
     setState(prev => {
       const newEnabled = !prev.loudnessEnabled;
       const t = ctxRef.current?.currentTime ?? 0;
@@ -842,7 +870,7 @@ export function useAudioEngine(audioRef: React.RefObject<HTMLAudioElement | null
 
       return { ...prev, loudnessEnabled: newEnabled };
     });
-  }, []);
+  }, [initEngine]);
 
   const setSpeed = useCallback((value: number) => {
     if (audioRef.current) {

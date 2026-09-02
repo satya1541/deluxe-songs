@@ -34,16 +34,33 @@ export async function GET(request: NextRequest) {
     const titleParam = request.nextUrl.searchParams.get('title');
     const artistParam = request.nextUrl.searchParams.get('artist');
 
-    if (source === 'youtube' && idParam) {
-      const cleanId = decodeURIComponent(idParam).replace(/^yt_/, '');
-      targetUrl = await resolveYouTubeStreamUrl(cleanId);
+    if (source === 'youtube') {
+      const cleanId = idParam ? decodeURIComponent(idParam).replace(/^yt_/, '') : '';
+      const isDirectYtId = /^[a-zA-Z0-9_-]{11}$/.test(cleanId);
+      
+      if (isDirectYtId) {
+        targetUrl = await resolveYouTubeStreamUrl(cleanId);
+      } else if (titleParam || artistParam) {
+        // Resolve YouTube counterpart on demand
+        try {
+          const { searchYouTubeMusic } = await import('@/lib/multi-music');
+          const searchRes = await searchYouTubeMusic(`${titleParam || ''} ${artistParam || ''}`.trim(), 1);
+          if (searchRes.length > 0 && searchRes[0].id) {
+            const resolvedYtId = searchRes[0].id.replace(/^yt_/, '');
+            targetUrl = await resolveYouTubeStreamUrl(resolvedYtId);
+          }
+        } catch (ytResolveErr) {
+          console.warn('On-demand YouTube resolution failed, checking fallback:', ytResolveErr);
+        }
+      }
+
       customUserAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
       // Smart VPS Fallback: If YouTube is blocked by BotGuard (LOGIN_REQUIRED) on the server,
-      // seamlessly resolve audio stream from JioSaavn so audio NEVER fails!
+      // seamlessly resolve audio stream so audio NEVER fails!
       if (!targetUrl && (titleParam || artistParam)) {
         const searchQuery = `${titleParam || ''} ${artistParam || ''}`.trim();
-        console.log(`[STREAM FALLBACK] YouTube blocked by BotGuard. Resolving audio fallback via JioSaavn for "${searchQuery}"...`);
+        console.log(`[STREAM FALLBACK] Resolving audio fallback via JioSaavn for "${searchQuery}"...`);
         try {
           const { searchSaavnSongs } = await import('@/lib/saavn-stream');
           const results = await searchSaavnSongs(searchQuery, 1, 3);
@@ -52,11 +69,11 @@ export async function GET(request: NextRequest) {
             const directUrl = fallbackParams.get('url');
             if (directUrl) {
               targetUrl = directUrl;
-              console.log(`[STREAM FALLBACK SUCCESS] Seamlessly streaming high-quality audio fallback from JioSaavn for "${searchQuery}"!`);
+              console.log(`[STREAM FALLBACK SUCCESS] Seamlessly streaming high-quality audio fallback for "${searchQuery}"!`);
             }
           }
         } catch (fallbackErr: any) {
-          console.log(`[STREAM FALLBACK ERROR] JioSaavn fallback failed: ${fallbackErr?.message}`);
+          console.log(`[STREAM FALLBACK ERROR] Fallback failed: ${fallbackErr?.message}`);
         }
       }
     } else if (source === 'soundcloud') {
