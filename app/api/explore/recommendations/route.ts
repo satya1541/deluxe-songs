@@ -79,9 +79,15 @@ function sanitizeSessionContext(raw: any): SessionContext {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
-    const artist = typeof body.artist === 'string' ? body.artist.trim() : '';
-    const language = typeof body.language === 'string' ? body.language.trim() : 'all';
+    const name = typeof body.name === 'string'
+      ? body.name.trim()
+      : (typeof body.currentTrack?.name === 'string' ? body.currentTrack.name.trim() : '');
+    const artist = typeof body.artist === 'string'
+      ? body.artist.trim()
+      : (typeof body.currentTrack?.artist === 'string' ? body.currentTrack.artist.trim() : '');
+    const language = typeof body.language === 'string'
+      ? body.language.trim()
+      : (typeof body.currentTrack?.language === 'string' ? body.currentTrack.language.trim() : 'all');
     const limit = Math.min(Math.max(1, parseInt(body.limit) || 20), 30);
 
     if (!name && !artist) {

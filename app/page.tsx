@@ -275,9 +275,14 @@ function ExplorePageContent() {
             }),
           });
           const data = await res.json();
-          if (data.success && data.tracks && data.tracks.length > 0) {
+          const rawTracks: ExploreSong[] = Array.isArray(data.songs)
+            ? data.songs
+            : Array.isArray(data.tracks)
+            ? data.tracks.map((r: any) => r.track || r)
+            : [];
+          if (rawTracks.length > 0) {
             const existingIds = new Set([...upcomingQueue, currentSong, ...historyStack].map((s) => s.id));
-            const newTracks = data.tracks.filter((t: ExploreSong) => !existingIds.has(t.id));
+            const newTracks = rawTracks.filter((t: ExploreSong) => t && t.id && !existingIds.has(t.id));
             if (newTracks.length > 0) {
               setQueue([...upcomingQueue, ...newTracks]);
             }
@@ -531,14 +536,14 @@ function ExplorePageContent() {
         <div style={{ width: 40, height: 40 }} className="pointer-events-auto hidden md:block" /> {/* Spacer */}
       </header>
 
-      <div className="px-3 sm:px-6 py-2 flex flex-col gap-2.5">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-3 sm:mx-0 px-3 sm:px-0">
+      <div style={{ padding: '4px 24px 8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
           {SUPPORTED_LANGUAGES.map((lang) => (
             <button
               key={lang.id}
               type="button"
               onClick={() => handleLanguageSelect(lang.id)}
-              className={selectedLanguage === lang.id ? 'glass-pill-active shrink-0' : 'glass-pill shrink-0'}
+              className={selectedLanguage === lang.id ? 'glass-pill-active' : 'glass-pill'}
               style={{
                 padding: '6px 14px',
                 borderRadius: '9999px',
@@ -546,7 +551,6 @@ function ExplorePageContent() {
                 fontWeight: selectedLanguage === lang.id ? 600 : 500,
                 cursor: 'pointer',
                 letterSpacing: '0.02em',
-                whiteSpace: 'nowrap',
               }}
             >
               {lang.name}
@@ -554,8 +558,8 @@ function ExplorePageContent() {
           ))}
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mx-3 sm:mx-0 px-3 sm:px-0">
-          <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold shrink-0 mr-1">Source:</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+          <span style={{ fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.4)', fontWeight: 700, marginRight: '2px' }}>Source:</span>
           {(searchQuery
             ? [
               { id: 'all', label: 'All Sources', icon: null },
@@ -571,7 +575,7 @@ function ExplorePageContent() {
               key={p.id}
               type="button"
               onClick={() => handlePlatformSelect(p.id as any)}
-              className={selectedPlatform === p.id ? 'glass-pill-active shrink-0' : 'glass-pill shrink-0'}
+              className={selectedPlatform === p.id ? 'glass-pill-active' : 'glass-pill'}
               style={{
                 padding: '5px 12px',
                 borderRadius: '9999px',
@@ -581,7 +585,6 @@ function ExplorePageContent() {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
-                whiteSpace: 'nowrap',
               }}
             >
               {p.icon ? (
@@ -599,21 +602,21 @@ function ExplorePageContent() {
         </div>
       </div>
 
-      <main className="px-3 sm:px-6 pb-28 sm:pb-32 flex-1" style={{ opacity: isLoading ? 0.6 : 1, transition: 'opacity 0.2s', pointerEvents: isLoading ? 'none' : 'auto' }}>
+      <main style={{ padding: '8px 24px 24px', flex: 1, opacity: isLoading ? 0.6 : 1, transition: 'opacity 0.2s', pointerEvents: isLoading ? 'none' : 'auto' }}>
         <div ref={searchResultsSectionRef} style={{ marginBottom: '12px', scrollMarginTop: '120px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
             <motion.h2
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
-              style={{ fontSize: 'clamp(1.25rem, 4vw, 2rem)', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.2 }}
+              style={{ fontSize: 'clamp(1.4rem, 3vw, 2rem)', fontWeight: 700, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.1 }}
             >
               {searchQuery ? `Search results for "${searchQuery}"` : `${currentLanguageName} Top 50 Hits`}
             </motion.h2>
             {correctedQuery && (
               <motion.p
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-                style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', marginTop: '2px' }}
+                style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '2px' }}
               >
                 Showing results for <span style={{ color: '#fff', fontWeight: 700 }}>{correctedQuery}</span>
               </motion.p>
@@ -648,17 +651,17 @@ function ExplorePageContent() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1] }}
-            className="grid grid-cols-1 lg:grid-cols-12 gap-4 w-full"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '16px', width: '100%', paddingBottom: '100px' }}
           >
       {/* Top Result Section */}
       {topResult && (
-        <div className="double-bezel-shell col-span-1 lg:col-span-8">
-          <div className="double-bezel-core p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center cursor-pointer relative overflow-hidden"
+        <div className="double-bezel-shell" style={{ gridColumn: 'span 8' }}>
+          <div className="double-bezel-core" style={{ padding: '24px', display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'center', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
             onClick={() => topResult.type === 'song' ? handleStartFreshSong(topResult as CanonicalSong) : router.push(`/${topResult.type}/${topResult.id}`)}>
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.05)', opacity: 0, transition: 'opacity 0.7s', pointerEvents: 'none',
               backgroundImage: `radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent)` }} />
 
-            <div className="double-bezel-shell w-24 h-24 sm:w-32 sm:h-32 shrink-0 p-1">
+            <div className="double-bezel-shell" style={{ width: 130, height: 130, flexShrink: 0, padding: '4px' }}>
               <img
                 src={topResult.cover}
                 alt={topResult.name}
@@ -673,7 +676,7 @@ function ExplorePageContent() {
                   Top Result • {topResult.type}
                 </span>
               </div>
-              <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 2.2rem)', fontWeight: 700, color: '#fff', marginBottom: '8px', letterSpacing: '-0.02em', lineHeight: 1.15 }}>
+              <h2 style={{ fontSize: 'clamp(1.3rem, 3vw, 2.5rem)', fontWeight: 700, color: '#fff', marginBottom: '8px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
                 {topResult.name}
               </h2>
 
@@ -683,7 +686,7 @@ function ExplorePageContent() {
                 {topResult.type === 'song' && <span>{(topResult as CanonicalSong).artist}</span>}
               </div>
 
-              <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-start sm:justify-end' }}>
+              <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
                 <div className="btn-nested" style={{ padding: '0.4rem 0.8rem 0.4rem 1.2rem' }}>
                   <span style={{ fontWeight: 600, fontSize: '13px' }}>
                     {topResult.type === 'song' ? 'Play Now' : 'Explore'}
@@ -700,7 +703,7 @@ function ExplorePageContent() {
 
       {/* Asymmetrical Artists/Albums Sidebar */}
       {(artists.length > 0 || (intent?.primary === 'album' && albums.length > 0)) && (
-        <div className="col-span-1 lg:col-span-4 flex flex-col gap-3 sm:gap-4">
+        <div style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {artists.slice(0, 2).map((artist, idx) => (
             <Link key={artist.id} href={`/artist/${artist.id}`} style={{ display: 'block', height: '100%', textDecoration: 'none' }}>
               <motion.div
@@ -710,18 +713,18 @@ function ExplorePageContent() {
                 className="double-bezel-shell"
                 style={{ height: '100%' }}
               >
-                <div className="double-bezel-core p-3 sm:p-4 flex items-center gap-3">
+                <div className="double-bezel-core" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <img
                     src={artist.cover || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80'}
                     alt={artist.name}
-                    style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                    style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, backgroundColor: 'rgba(255,255,255,0.05)' }}
                     onError={(e) => {
                       e.currentTarget.src = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&auto=format&fit=crop&q=80';
                     }}
                   />
                   <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                    <h4 style={{ color: '#fff', fontWeight: 700, fontSize: '14px', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{artist.name}</h4>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', textTransform: 'capitalize' }}>{artist.role || 'Artist'}</p>
+                    <h4 style={{ color: '#fff', fontWeight: 700, fontSize: '15px', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{artist.name}</h4>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12.5px', textTransform: 'capitalize' }}>{artist.role || 'Artist'}</p>
                   </div>
                 </div>
               </motion.div>
@@ -732,12 +735,12 @@ function ExplorePageContent() {
 
       {/* Albums Grid */}
       {albums.length > 0 && (
-        <div className="col-span-1 lg:col-span-12 mt-3">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>Albums</h3>
+        <div style={{ gridColumn: 'span 12', marginTop: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>Albums</h3>
             <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, rgba(255,255,255,0.1), transparent)' }} />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px' }}>
             {albums.map((album, idx) => (
               <Link key={album.id} href={`/album/${album.id}`} style={{ textDecoration: 'none' }}>
                 <motion.div
@@ -750,8 +753,8 @@ function ExplorePageContent() {
                   <div className="double-bezel-core" style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                     <img src={album.cover} alt={album.name} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8, transition: 'all 0.7s' }} />
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.2), transparent)' }} />
-                    <div style={{ marginTop: 'auto', padding: '10px sm:12px', zIndex: 10 }}>
-                      <h4 style={{ color: '#fff', fontWeight: 700, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{album.name}</h4>
+                    <div style={{ marginTop: 'auto', padding: '12px', zIndex: 10 }}>
+                      <h4 style={{ color: '#fff', fontWeight: 700, fontSize: '13.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{album.name}</h4>
                       <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{album.artist}</p>
                     </div>
                   </div>
@@ -764,12 +767,12 @@ function ExplorePageContent() {
 
       {/* Songs Grid */}
       {songs.length > 0 && (
-        <div className="col-span-1 lg:col-span-12 mt-4">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>Songs</h3>
+        <div style={{ gridColumn: 'span 12', marginTop: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>Songs</h3>
             <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to right, rgba(255,255,255,0.1), transparent)' }} />
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
             {songs.map((song, idx) => {
               const isCurrent = currentSong?.id === song.id;
               const isThisPlaying = isCurrent && isPlaying;
@@ -787,11 +790,15 @@ function ExplorePageContent() {
                   }}
                   onClick={() => handleStartFreshSong(song)}
                 >
-                  <div className="double-bezel-core p-2.5 sm:p-3 flex items-center gap-3 sm:gap-4" style={{
+                  <div className="double-bezel-core" style={{
+                    padding: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
                     transition: 'background-color 0.5s',
                     backgroundColor: isCurrent ? 'rgba(255,255,255,0.1)' : undefined,
                   }}>
-                    <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden shrink-0">
+                    <div style={{ position: 'relative', width: 64, height: 64, borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
                       <SongArtwork
                         cover={song.cover}
                         name={song.name}
@@ -804,15 +811,15 @@ function ExplorePageContent() {
                         transition: 'opacity 0.3s',
                         opacity: isThisPlaying ? 1 : 0,
                       }}>
-                        {isThisPlaying ? <Pause size={20} weight="fill" style={{ color: '#fff' }} /> : <Play size={20} weight="fill" style={{ color: '#fff', marginLeft: '2px' }} />}
+                        {isThisPlaying ? <Pause size={24} weight="fill" style={{ color: '#fff' }} /> : <Play size={24} weight="fill" style={{ color: '#fff', marginLeft: '2px' }} />}
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-                      <h3 className="font-bold truncate text-sm sm:text-base transition-colors" style={{ color: isCurrent ? '#1db954' : '#fff' }} title={song.name}>
+                      <h3 style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '18px', transition: 'color 0.3s', color: isCurrent ? '#1db954' : '#fff' }} title={song.name}>
                         {song.name}
                       </h3>
-                      <p className="text-white/50 text-xs sm:text-sm truncate mt-0.5" title={song.artist}>
+                      <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }} title={song.artist}>
                         {song.artist}
                       </p>
                     </div>
