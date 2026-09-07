@@ -538,3 +538,37 @@ export function preserveAuthoritativeChartRanking(
 
   return chartResults;
 }
+
+/**
+ * Detects if a track is a derivative, remix, reprise, lofi, lyrical video,
+ * live recording, instrumental/karaoke, or low-quality rip.
+ * Strictly guarantees that only authentic, original studio tracks are recommended.
+ */
+export function isJunkOrDerivativeTrack(title?: string, album?: string): boolean {
+  if (!title) return true;
+  const t = ` ${title.toLowerCase()} `;
+  const a = album ? ` ${album.toLowerCase()} ` : '';
+
+  // 1. Reprise versions
+  const repriseRegex = /\b(reprise|reprised|re-prise|revisited|re-visited)\b/i;
+  if (repriseRegex.test(t) || repriseRegex.test(a)) return true;
+
+  // 2. Remix / DJ / Club / Mashup
+  const remixRegex = /\b(remix|remixed|dj\s*remix|club\s*mix|party\s*mix|dance\s*mix|extended\s*mix|mashup|mash\s*up|dholki\s*mix|jhankar\s*mix|bass\s*boosted|trap\s*mix|electro\s*mix|edm\s*mix|remix\s*version)\b/i;
+  if (remixRegex.test(t) || remixRegex.test(a)) return true;
+  if (/\bdj\s+[\w\d]+/i.test(t)) return true;
+
+  // 3. Lofi / Slowed / Reverb
+  const lofiRegex = /\b(lofi|lo-fi|lo\s*fi|slowed|reverb|slowed\s*(\+|&|and)?\s*reverb|chillout|chill\s*mix|ambient\s*mix|sleep\s*mix|bedtime\s*mix|relaxing\s*mix)\b/i;
+  if (lofiRegex.test(t) || lofiRegex.test(a)) return true;
+
+  // 4. Lyrical Video / Lyric / Promo / Teaser / Status / Video
+  const lyricalRegex = /\b(lyrical|lyric|lyrics|lyrical\s*video|lyric\s*video|lyrics\s*video|full\s*lyrical|with\s*lyrics|video\s*song|official\s*video|music\s*video|hook\s*step|short\s*video|shorts|status|whatsapp\s*status|reels|teaser|trailer|promo|motion\s*poster|making\s*of|dialogue\s*promo|audio\s*song|audio\s*track|full\s*song\s*audio|hd\s*video|4k\s*video)\b/i;
+  if (lyricalRegex.test(t) || lyricalRegex.test(a)) return true;
+
+  // 5. Covers / Unplugged / Acoustic / Karaoke / Instrumental / Audio Gimmicks
+  const coverRegex = /\b(cover|unplugged|acoustic|karaoke|instrumental|orchestral|female\s*version|male\s*version|sad\s*version|slow\s*version|fast\s*version|nightcore|chipmunk|8d|16d|3d\s*audio|ringtone|bgm|theme\s*music|live\s*performance|live\s*at|live\s*concert|reaction)\b/i;
+  if (coverRegex.test(t) || coverRegex.test(a)) return true;
+
+  return false;
+}

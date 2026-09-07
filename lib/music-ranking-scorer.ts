@@ -16,7 +16,7 @@ import {
   DynamicWeights,
   ExplorationMixRatio,
 } from '@/types/recommendation';
-import { normalizeTitle, normalizeArtist, isCleanTrack, toCandidateTrack } from './music-ranking';
+import { normalizeTitle, normalizeArtist, isCleanTrack, toCandidateTrack, isJunkOrDerivativeTrack } from './music-ranking';
 import {
   buildSessionProfile,
   SessionProfile,
@@ -53,7 +53,10 @@ function isHardRejected(
   const canonKey = (song as any).canonicalKey;
   if (canonKey && excludedCanonicalKeys.has(canonKey)) return true;
 
-  // 4. Junk, podcast, ringtone, compilation filtering
+  // 4. Strict filter: No reprise, remix, lofi, lyrical video, cover, acoustic, etc.
+  if (isJunkOrDerivativeTrack(song.name, song.album)) return true;
+
+  // 5. Junk, podcast, ringtone, compilation filtering
   const candidate = toCandidateTrack(song, 1);
   if (!isCleanTrack(candidate)) return true;
 
