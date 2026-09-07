@@ -52,6 +52,12 @@ function sanitizeSessionContext(raw: any): SessionContext {
     if (typeof raw.currentArtist === 'string') {
       ctx.currentArtist = String(raw.currentArtist).slice(0, 200);
     }
+    if (
+      typeof raw.sessionIntent === 'string' &&
+      ['DEEP_FOCUS_ARTIST', 'MOOD_FLOW', 'CHARTS_POPULAR', 'ACTIVE_DISCOVERY'].includes(raw.sessionIntent)
+    ) {
+      ctx.sessionIntent = raw.sessionIntent as any;
+    }
     if (Array.isArray(raw.excludedTrackIds)) {
       ctx.excludedTrackIds = raw.excludedTrackIds
         .filter((id: any) => typeof id === 'string')

@@ -198,6 +198,9 @@ export class RecommendationEngine {
     return {
       tracks: diversified,
       rankingMode: 'personalized',
+      sessionIntent: profile.detectedIntent,
+      weightsApplied: profile.dynamicWeights,
+      explorationRatios: profile.explorationRatios,
       emotion: {
         type: currentMood,
         label: emotionData.label,
@@ -298,7 +301,7 @@ export class RecommendationEngine {
         `sess=${f.sessionAffinity.toFixed(2)} art=${f.artistAffinity.toFixed(2)} ` +
         `lang=${f.languageAffinity.toFixed(2)} mood=${f.moodSimilarity.toFixed(2)} ` +
         `pop=${f.popularity.toFixed(2)} fresh=${f.freshness.toFixed(2)} ` +
-        `novel=${f.novelty.toFixed(2)} qual=${f.audioQuality.toFixed(2)}\n` +
+        `novel=${f.novelty.toFixed(2)} qual=${(f.audioQuality ?? 1.0).toFixed(2)}\n` +
         `  reasons: [${reasonStr}]`
       );
     }
